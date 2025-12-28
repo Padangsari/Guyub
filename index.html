@@ -94,6 +94,125 @@
         display: none !important;
     }
 
+/* ========================================================================
+   COMPACT CARD GRID - MOBILE PORTRAIT (SUPER SAFE VERSION)
+   ======================================================================== */
+
+@media (max-width: 640px) and (orientation: portrait) {
+  
+  /* DATA WARGA 2x2 */
+  #warga .grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  #warga .text-center.p-4 { 
+    padding: 0.65rem !important; 
+    border-radius: 0.75rem !important;
+  }
+  #warga .text-2xl.font-bold { 
+    font-size: 1.25rem !important; 
+    line-height: 1.5rem !important;
+  }
+  #warga .text-sm { 
+    font-size: 0.7rem !important; 
+  }
+
+  /* LAPORAN KAS - 2 atas 1 bawah full + UNGU FULL */
+  #laporan-kas .grid.grid-cols-1.md\:grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  #laporan-kas .bg-green-50.rounded-lg.p-4 { 
+    grid-column: span 1 !important; 
+    padding: 0.65rem !important; 
+  }
+  #laporan-kas .bg-red-50.rounded-lg.p-4 { 
+    grid-column: span 1 !important; 
+    padding: 0.65rem !important; 
+  }
+  #laporan-kas .bg-blue-50.rounded-lg.p-4 { 
+    grid-column: 1 / -1 !important; 
+    padding: 0.75rem !important; 
+  }
+
+  /* RINGKASAN TOTAL UNGU - FORCE FULL WIDTH */
+  #laporan-kas div:last-child,
+  #laporan-kas > div:last-child,
+  #laporan-kas .bg-purple-500,
+  #laporan-kas .bg-indigo-500 {
+    width: 100% !important;
+    grid-column: 1 / -1 !important;
+    margin-top: 0.5rem !important;
+  }
+
+  #laporan-kas .text-xl.font-bold { 
+    font-size: 1rem !important; 
+    line-height: 1.25rem !important;
+  }
+  #laporan-kas .text-sm { 
+    font-size: 0.7rem !important; 
+  }
+
+  /* REKAPITULASI IURAN 2x2 */
+  #rekapitulasi-iuran .grid.grid-cols-1.md\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  #rekapitulasi-iuran .bg-blue-50.rounded-lg.p-4,
+  #rekapitulasi-iuran .bg-green-50.rounded-lg.p-4,
+  #rekapitulasi-iuran .bg-red-50.rounded-lg.p-4,
+  #rekapitulasi-iuran .bg-yellow-50.rounded-lg.p-4 {
+    padding: 0.65rem !important;
+  }
+  #rekapitulasi-iuran .text-2xl.font-bold { 
+    font-size: 1.25rem !important; 
+  }
+  #rekapitulasi-iuran .text-sm { 
+    font-size: 0.7rem !important; 
+  }
+
+  /* ASET & CCTV 2x2 */
+  #aset .grid,
+  #cctv .grid.grid-cols-1.md\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  #aset .text-center.p-4.bg-blue-50,
+  #aset .text-center.p-4.bg-green-50,
+  #aset .text-center.p-4.bg-red-50,
+  #aset .text-center.p-4.bg-yellow-50,
+  #cctv .bg-green-50.rounded-lg.p-4.text-center,
+  #cctv .bg-blue-50.rounded-lg.p-4.text-center,
+  #cctv .bg-yellow-50.rounded-lg.p-4.text-center,
+  #cctv .bg-purple-50.rounded-lg.p-4.text-center {
+    padding: 0.65rem !important;
+  }
+  #aset .text-2xl.font-bold,
+  #cctv .text-2xl.font-bold { 
+    font-size: 1.25rem !important; 
+  }
+  #aset .text-sm,
+  #cctv .text-sm { 
+    font-size: 0.7rem !important; 
+  }
+}
+
+/* LAYAR SANGAT KECIL <400px */
+@media (max-width: 400px) and (orientation: portrait) {
+  #warga .grid, #laporan-kas .grid, #rekapitulasi-iuran .grid, #aset .grid, #cctv .grid { 
+    gap: 0.4rem !important; 
+  }
+  #warga .text-2xl.font-bold, #rekapitulasi-iuran .text-2xl.font-bold, #aset .text-2xl.font-bold, #cctv .text-2xl.font-bold { 
+    font-size: 1.1rem !important; 
+  }
+  #laporan-kas .text-xl.font-bold { 
+    font-size: 0.9rem !important; 
+  }
+  #warga .text-sm, #laporan-kas .text-sm, #rekapitulasi-iuran .text-sm, #aset .text-sm, #cctv .text-sm { 
+    font-size: 0.65rem !important; 
+  }
+}
+
     /* ===== ANIMASI DOWNLOAD APK ===== */
     
     /* Animasi pulse + glow untuk Download APK */
