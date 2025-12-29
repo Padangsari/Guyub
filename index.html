@@ -95,178 +95,121 @@
     }
 
 /* ========================================================================
-   COMPACT CARD GRID - MOBILE PORTRAIT
-   Untuk: Data Warga, Laporan Kas, Rekapitulasi Iuran, Aset, CCTV
+   COMPACT CARD GRID - MOBILE PORTRAIT (SUPER SAFE VERSION)
    ======================================================================== */
 
 @media (max-width: 640px) and (orientation: portrait) {
   
-  /* ============================================
-     TAB DATA WARGA (40, 108, 2.7, 100%) - 2 x 2
-     ============================================ */
-  #warga .grid,
-  #warga .grid.grid-cols-1,
-  #warga .grid.grid-cols-1.md\:grid-cols-4 {
-    display: grid !important;
+  /* DATA WARGA 2x2 */
+  #warga .grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.5rem !important;
   }
-
-  #warga .text-center.p-4 {
-    padding: 0.65rem !important;
+  #warga .text-center.p-4 { 
+    padding: 0.65rem !important; 
     border-radius: 0.75rem !important;
   }
-
-  #warga .text-2xl.font-bold {
-    font-size: 1.25rem !important;
+  #warga .text-2xl.font-bold { 
+    font-size: 1.25rem !important; 
     line-height: 1.5rem !important;
   }
-
-  #warga .text-sm {
-    font-size: 0.7rem !important;
+  #warga .text-sm { 
+    font-size: 0.7rem !important; 
   }
 
-  /* ============================================
-     TAB KEUANGAN: LAPORAN KAS
-     Atas: 2 kolom (Pemasukan, Pengeluaran)
-     Bawah: 1 kolom full (Saldo)
-     ============================================ */
+  /* LAPORAN KAS - 2 atas 1 bawah full + UNGU FULL */
   #laporan-kas .grid.grid-cols-1.md\:grid-cols-3 {
-    display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.5rem !important;
   }
-
-  /* 1) Total Pemasukan - hijau (kiri atas) */
-  #laporan-kas .bg-green-50.rounded-lg.p-4 {
-    grid-column: span 1 / span 1 !important;
-    padding: 0.65rem !important;
+  #laporan-kas .bg-green-50.rounded-lg.p-4 { 
+    grid-column: span 1 !important; 
+    padding: 0.65rem !important; 
+  }
+  #laporan-kas .bg-red-50.rounded-lg.p-4 { 
+    grid-column: span 1 !important; 
+    padding: 0.65rem !important; 
+  }
+  #laporan-kas .bg-blue-50.rounded-lg.p-4 { 
+    grid-column: 1 / -1 !important; 
+    padding: 0.75rem !important; 
   }
 
-  /* 2) Total Pengeluaran - merah (kanan atas) */
-  #laporan-kas .bg-red-50.rounded-lg.p-4 {
-    grid-column: span 1 / span 1 !important;
-    padding: 0.65rem !important;
-  }
-
-  /* 3) Saldo - biru (bawah full) */
-  #laporan-kas .bg-blue-50.rounded-lg.p-4 {
+  /* RINGKASAN TOTAL UNGU - FORCE FULL WIDTH */
+  #laporan-kas div:last-child,
+  #laporan-kas > div:last-child,
+  #laporan-kas .bg-purple-500,
+  #laporan-kas .bg-indigo-500 {
+    width: 100% !important;
     grid-column: 1 / -1 !important;
-    padding: 0.75rem !important;
+    margin-top: 0.5rem !important;
   }
 
-  #laporan-kas .text-xl.font-bold {
-    font-size: 1rem !important;
+  #laporan-kas .text-xl.font-bold { 
+    font-size: 1rem !important; 
     line-height: 1.25rem !important;
   }
-
-  #laporan-kas .text-sm {
-    font-size: 0.7rem !important;
+  #laporan-kas .text-sm { 
+    font-size: 0.7rem !important; 
   }
 
-  /* ============================================
-     TAB KEUANGAN: REKAPITULASI IURAN (2 x 2)
-     ============================================ */
+  /* REKAPITULASI IURAN 2x2 */
   #rekapitulasi-iuran .grid.grid-cols-1.md\:grid-cols-4 {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.5rem !important;
   }
-
   #rekapitulasi-iuran .bg-blue-50.rounded-lg.p-4,
   #rekapitulasi-iuran .bg-green-50.rounded-lg.p-4,
   #rekapitulasi-iuran .bg-red-50.rounded-lg.p-4,
   #rekapitulasi-iuran .bg-yellow-50.rounded-lg.p-4 {
     padding: 0.65rem !important;
   }
-
-  #rekapitulasi-iuran .text-2xl.font-bold {
-    font-size: 1.25rem !important;
-    line-height: 1.5rem !important;
+  #rekapitulasi-iuran .text-2xl.font-bold { 
+    font-size: 1.25rem !important; 
+  }
+  #rekapitulasi-iuran .text-sm { 
+    font-size: 0.7rem !important; 
   }
 
-  #rekapitulasi-iuran .text-sm {
-    font-size: 0.7rem !important;
-  }
-
-  /* ============================================
-     TAB DATA ASET (2 x 2)
-     ============================================ */
-  #aset .grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.5rem !important;
-  }
-
-  #aset .text-center.p-4.bg-blue-50,
-  #aset .text-center.p-4.bg-green-50,
-  #aset .text-center.p-4.bg-red-50,
-  #aset .text-center.p-4.bg-yellow-50 {
-    padding: 0.65rem !important;
-  }
-
-  #aset .text-2xl.font-bold {
-    font-size: 1.25rem !important;
-  }
-
-  #aset .text-sm {
-    font-size: 0.7rem !important;
-  }
-
-  /* ============================================
-     TAB CCTV (2 x 2)
-     ============================================ */
+  /* ASET & CCTV 2x2 */
+  #aset .grid,
   #cctv .grid.grid-cols-1.md\:grid-cols-4 {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.5rem !important;
   }
-
+  #aset .text-center.p-4.bg-blue-50,
+  #aset .text-center.p-4.bg-green-50,
+  #aset .text-center.p-4.bg-red-50,
+  #aset .text-center.p-4.bg-yellow-50,
   #cctv .bg-green-50.rounded-lg.p-4.text-center,
   #cctv .bg-blue-50.rounded-lg.p-4.text-center,
   #cctv .bg-yellow-50.rounded-lg.p-4.text-center,
   #cctv .bg-purple-50.rounded-lg.p-4.text-center {
     padding: 0.65rem !important;
   }
-
-  #cctv .text-2xl.font-bold {
-    font-size: 1.25rem !important;
+  #aset .text-2xl.font-bold,
+  #cctv .text-2xl.font-bold { 
+    font-size: 1.25rem !important; 
   }
-
-  #cctv .text-sm {
-    font-size: 0.7rem !important;
+  #aset .text-sm,
+  #cctv .text-sm { 
+    font-size: 0.7rem !important; 
   }
 }
 
-/* ========================================================================
-   LAYAR SANGAT KECIL (<400px) - LEBIH PADAT
-   ======================================================================== */
+/* LAYAR SANGAT KECIL <400px */
 @media (max-width: 400px) and (orientation: portrait) {
-
-  #warga .grid,
-  #warga .grid.grid-cols-1,
-  #warga .grid.grid-cols-1.md\:grid-cols-4,
-  #laporan-kas .grid.grid-cols-1.md\:grid-cols-3,
-  #rekapitulasi-iuran .grid.grid-cols-1.md\:grid-cols-4,
-  #aset .grid,
-  #cctv .grid.grid-cols-1.md\:grid-cols-4 {
-    gap: 0.4rem !important;
+  #warga .grid, #laporan-kas .grid, #rekapitulasi-iuran .grid, #aset .grid, #cctv .grid { 
+    gap: 0.4rem !important; 
   }
-
-  #warga .text-2xl.font-bold,
-  #rekapitulasi-iuran .text-2xl.font-bold,
-  #aset .text-2xl.font-bold,
-  #cctv .text-2xl.font-bold {
-    font-size: 1.1rem !important;
+  #warga .text-2xl.font-bold, #rekapitulasi-iuran .text-2xl.font-bold, #aset .text-2xl.font-bold, #cctv .text-2xl.font-bold { 
+    font-size: 1.1rem !important; 
   }
-
-  #laporan-kas .text-xl.font-bold {
-    font-size: 0.9rem !important;
+  #laporan-kas .text-xl.font-bold { 
+    font-size: 0.9rem !important; 
   }
-
-  #warga .text-sm,
-  #laporan-kas .text-sm,
-  #rekapitulasi-iuran .text-sm,
-  #aset .text-sm,
-  #cctv .text-sm {
-    font-size: 0.65rem !important;
+  #warga .text-sm, #laporan-kas .text-sm, #rekapitulasi-iuran .text-sm, #aset .text-sm, #cctv .text-sm { 
+    font-size: 0.65rem !important; 
   }
 }
 
