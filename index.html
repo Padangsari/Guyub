@@ -95,7 +95,7 @@
     }
 
 /* ========================================================================
-   COMPACT CARD GRID - MOBILE PORTRAIT (FINAL: + RINGKASAN UNGU FULL WIDTH)
+   COMPACT CARD GRID - MOBILE PORTRAIT
    Untuk: Data Warga, Laporan Kas, Rekapitulasi Iuran, Aset, CCTV
    ======================================================================== */
 
@@ -129,7 +129,7 @@
   /* ============================================
      TAB KEUANGAN: LAPORAN KAS
      Atas: 2 kolom (Pemasukan, Pengeluaran)
-     Bawah: 1 kolom full (Saldo) + RINGKASAN UNGU FULL WIDTH
+     Bawah: 1 kolom full (Saldo)
      ============================================ */
   #laporan-kas .grid.grid-cols-1.md\:grid-cols-3 {
     display: grid !important;
@@ -153,20 +153,6 @@
   #laporan-kas .bg-blue-50.rounded-lg.p-4 {
     grid-column: 1 / -1 !important;
     padding: 0.75rem !important;
-  }
-
-  /* RINGKASAN TOTAL KEUANGAN RT (CARD UNGU PURPLE - FULL WIDTH) */
-  #laporan-kas .bg-purple-500,
-  #laporan-kas .bg-indigo-500,
-  #laporan-kas .bg-gradient-to-r,
-  #laporan-kas .bg-gradient-to-r.from-purple-500,
-  #laporan-kas .bg-gradient-to-r.from-purple-500.to-indigo-500,
-  #laporan-kas [style*="purple"],
-  #laporan-kas .ringkasan-total,
-  #laporan-kas .summary-total {
-    width: 100% !important;
-    grid-column: 1 / -1 !important;
-    margin-top: 0.5rem !important;
   }
 
   #laporan-kas .text-xl.font-bold {
