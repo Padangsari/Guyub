@@ -213,61 +213,6 @@
   }
 }
 
-/* ========================================================================
-   WEBVIEW APK FIX - FONT SERAGAM DI SEMUA ELEMEN
-   ======================================================================== */
-
-/* Paksa viewport WebView */
-@viewport {
-  width: device-width;
-  zoom: 1.0;
-}
-
-/* BASE FONT UNTUK APK WEBVIEW - SERAGAM */
-@media all and (-webkit-min-device-pixel-ratio:0) and (max-width: 640px) {
-  html { font-size: 16px !important; }
-  body { 
-    font-size: 14px !important; 
-    line-height: 1.4 !important;
-  }
-}
-
-/* APK WebView: BESARKAN HEADER + JUDUL TAB */
-@media (max-width: 640px) and (orientation: portrait) {
-  
-  /* Header/judul tab (Laporan Kas, Data Warga, dll) */
-  h1, h2, h3, .text-xl, .text-lg, .font-bold:not(.text-2xl) {
-    font-size: 1.1rem !important;
-  }
-  
-  /* Navbar/menu atas */
-  nav, .navbar, [class*="nav"], button, .btn {
-    font-size: 0.95rem !important;
-  }
-  
-  /* Card angka - proporsional */
-  .text-2xl.font-bold { font-size: 1.4rem !important; }
-  .text-xl.font-bold { font-size: 1.2rem !important; }
-  .text-sm { font-size: 0.8rem !important; }
-  
-  /* Padding seragam - kurangi whitespace */
-  .grid { gap: 0.4rem !important; }
-  .p-4 { padding: 0.6rem !important; }
-  
-  /* Section container - hapus margin berlebih */
-  section, #laporan-kas, #warga, #rekapitulasi-iuran {
-    padding: 0.5rem !important;
-    margin: 0 !important;
-  }
-}
-
-/* EXTRA KECIL SCREEN */
-@media (max-width: 380px) {
-  body { font-size: 13px !important; }
-  .text-2xl.font-bold { font-size: 1.3rem !important; }
-}
-
-
     /* ===== ANIMASI DOWNLOAD APK ===== */
     
     /* Animasi pulse + glow untuk Download APK */
