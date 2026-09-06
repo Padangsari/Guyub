@@ -294,16 +294,60 @@ function submitLaporRT(event) {
 
  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
 <script>
+function camCard(video){ return video.closest('.bg-black.rounded-lg') || video.parentElement; }
+function setCamStatus(video, status){
+  const card = camCard(video); if(!card) return;
+  const badge = card.querySelector('.cam-badge');
+  const dot = card.querySelector('.cam-dot');
+  const text = card.querySelector('.cam-text');
+  const map = {
+    loading: ['⏳ MEMUAT','bg-gray-600','bg-gray-400','text-gray-300','Memuat...'],
+    online:  ['● REC','bg-red-500','bg-green-400','text-green-300','Aktif'],
+    offline: ['🛠️ PERBAIKAN','bg-yellow-500','bg-yellow-400','text-yellow-300','Perbaikan']
+  };
+  const [label,badgeBg,dotBg,textCls,statusText] = map[status] || map.loading;
+  if(badge){
+    badge.textContent = label;
+    badge.className = 'cam-badge absolute top-2 right-2 ' + badgeBg + ' text-white px-2 py-1 rounded text-xs font-bold pointer-events-none' + (status==='online'?' animate-pulse':'');
+  }
+  if(dot) dot.className = 'cam-dot w-2 h-2 ' + dotBg + ' rounded-full animate-pulse';
+  if(text){ text.textContent = statusText; text.className = 'cam-text text-xs ' + textCls; }
+}
 function initHlsPlayer(video) {
   const src = video.dataset.src;
   if (!src) return;
-  if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    video.src = src;
-  } else if (window.Hls && window.Hls.isSupported()) {
-    const hls = new window.Hls({ lowLatencyMode: true });
+  setCamStatus(video, 'loading');
+  video.__retries = video.__retries || 0;
+  if (video.__hls) { try { video.__hls.destroy(); } catch(e){} video.__hls = null; }
+  const ok = function(){ video.__retries = 0; setCamStatus(video, 'online'); };
+  video.addEventListener('playing', ok);
+  video.addEventListener('loadeddata', ok);
+  const fail = function(){
+    setCamStatus(video, 'offline');
+    if (video.__retries < 3) { video.__retries++; setTimeout(function(){ initHlsPlayer(video); }, 5000); }
+  };
+  if (window.Hls && window.Hls.isSupported()) {
+    const hls = new window.Hls({ lowLatencyMode: true, manifestLoadingMaxRetry: 2, levelLoadingMaxRetry: 2 });
+    video.__hls = hls;
     hls.loadSource(src);
     hls.attachMedia(video);
+    hls.on(window.Hls.Events.MANIFEST_PARSED, function(){ video.play().catch(function(){}); });
+    hls.on(window.Hls.Events.ERROR, function(_e, data){ if (data && data.fatal) { try { hls.destroy(); } catch(err){} fail(); } });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = src;
+    video.addEventListener('error', fail, { once: true });
+    video.play().catch(function(){});
+  } else {
+    fail();
   }
+}
+function retryCamera(btn){
+  const card = btn.closest('.bg-black.rounded-lg');
+  const video = card && card.querySelector('video.hls-live');
+  if (video) { video.__retries = 0; initHlsPlayer(video); }
+}
+function refreshAllCameras(){
+  document.querySelectorAll('video.hls-live').forEach(function(v){ v.__retries = 0; initHlsPlayer(v); });
 }
 document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('video.hls-live').forEach(initHlsPlayer);
@@ -911,28 +955,22 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="relative aspect-video bg-black flex items-center justify-center">
            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
              data-src="https://livepantau.semarangkota.go.id/e750d09d-034d-46b7-89b5-e2e9a5db86e5/index.m3u8"></video>
-           <div class="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">🛠️ PERBAIKAN</div>
-           <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs pointer-events-none" id="timestamp1">--:--:--</div>
+           <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
           </div>
           <div class="bg-gray-800 text-white p-2 text-center">
            <p class="text-sm font-medium">📍 Jl. Merbau Selatan Dalam IV</p>
-           <div class="flex justify-center items-center space-x-2 mt-1">
-            <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div><span class="text-xs text-yellow-300">Perbaikan</span>
-           </div>
+           <div class="flex justify-center items-center space-x-2 mt-1"><div class="cam-dot w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div><span class="cam-text text-xs text-gray-300">Memuat...</span><button type="button" class="cam-retry text-xs text-blue-300 hover:text-blue-200 underline" onclick="retryCamera(this)">🔄 Muat ulang</button></div>
           </div>
          </div>
          <div class="bg-black rounded-lg overflow-hidden shadow-lg">
           <div class="relative aspect-video bg-black flex items-center justify-center">
            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
              data-src="https://livepantau.semarangkota.go.id/e750d09d-034d-46b7-89b5-e2e9a5db86e5/index.m3u8"></video>
-           <div class="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">🛠️ PERBAIKAN</div>
-           <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs pointer-events-none" id="timestamp2">--:--:--</div>
+           <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
           </div>
           <div class="bg-gray-800 text-white p-2 text-center">
            <p class="text-sm font-medium">📍 Jl. Merbau Selatan Dalam III</p>
-           <div class="flex justify-center items-center space-x-2 mt-1">
-            <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div><span class="text-xs text-yellow-300">Perbaikan</span>
-           </div>
+           <div class="flex justify-center items-center space-x-2 mt-1"><div class="cam-dot w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div><span class="cam-text text-xs text-gray-300">Memuat...</span><button type="button" class="cam-retry text-xs text-blue-300 hover:text-blue-200 underline" onclick="retryCamera(this)">🔄 Muat ulang</button></div>
           </div>
          </div>
         </div>
@@ -950,8 +988,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="relative aspect-video bg-black flex items-center justify-center">
            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
              data-src="https://livepantau.semarangkota.go.id/67b6b31a-7dfd-4edb-873e-57c3c5fb5d02/video1_stream.m3u8"></video>
-           <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold animate-pulse pointer-events-none">● REC</div>
-           <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs pointer-events-none" id="timestamp3">--:--:--</div>
+           <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
           </div>
           <div class="bg-gray-800 text-white p-2 text-center">
            <p class="text-sm font-medium">📍 Jl. Merbau Selatan I</p>
@@ -964,8 +1001,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="relative aspect-video bg-black flex items-center justify-center">
            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
              data-src="https://livepantau.semarangkota.go.id/c6f87fcc-799c-4ec7-a650-e6f4fec64124/video1_stream.m3u8"></video>
-           <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold animate-pulse pointer-events-none">● REC</div>
-           <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs pointer-events-none" id="timestamp4">--:--:--</div>
+           <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
           </div>
           <div class="bg-gray-800 text-white p-2 text-center">
            <p class="text-sm font-medium">📍 Jl. Merbau Selatan I</p>
@@ -988,9 +1024,8 @@ document.addEventListener('DOMContentLoaded', function () {
          <div class="bg-black rounded-lg overflow-hidden shadow-lg">
           <div class="relative aspect-video bg-black flex items-center justify-center">
            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
-             data-src="https://livepantau.semarangkota.go.id/3166f660-9362-4be1-aafe-4459873cc396/video1_stream.m3u8"></video>
-           <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold animate-pulse pointer-events-none">● REC</div>
-           <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs pointer-events-none" id="timestamp5">--:--:--</div>
+             data-src="https://livepantau.semarangkota.go.id/d2ee9187-f900-48b2-9fb4-48df4fd480ae/video1_stream.m3u8"></video>
+           <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
           </div>
           <div class="bg-gray-800 text-white p-2 text-center">
            <p class="text-sm font-medium">📍 Jl. Merbau Selatan Dalam I</p>
@@ -1002,9 +1037,8 @@ document.addEventListener('DOMContentLoaded', function () {
          <div class="bg-black rounded-lg overflow-hidden shadow-lg">
           <div class="relative aspect-video bg-black flex items-center justify-center">
            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
-             data-src="https://livepantau.semarangkota.go.id/df6f46f8-b6e6-4c3d-9810-dc6490223358/video1_stream.m3u8"></video>
-           <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold animate-pulse pointer-events-none">● REC</div>
-           <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs pointer-events-none" id="timestamp6">--:--:--</div>
+             data-src="https://livepantau.semarangkota.go.id/482d19e1-7c5f-43d3-9911-670166c2024b/video1_stream.m3u8"></video>
+           <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
           </div>
           <div class="bg-gray-800 text-white p-2 text-center">
            <p class="text-sm font-medium">📍 Jl. Merbau Selatan Dalam I</p>
@@ -1027,9 +1061,8 @@ document.addEventListener('DOMContentLoaded', function () {
          <div class="bg-black rounded-lg overflow-hidden shadow-lg">
           <div class="relative aspect-video bg-black flex items-center justify-center">
            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
-             data-src="https://livepantau.semarangkota.go.id/86f45d4e-667e-4c9b-919b-6db67de4816a/video1_stream.m3u8"></video>
-           <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold animate-pulse pointer-events-none">● REC</div>
-           <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs pointer-events-none" id="timestamp7">--:--:--</div>
+             data-src="https://livepantau.semarangkota.go.id/e02879a2-f4bd-4d4b-a875-6b6675ef13e9/video1_stream.m3u8"></video>
+           <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
           </div>
           <div class="bg-gray-800 text-white p-2 text-center">
            <p class="text-sm font-medium">📍 Jl. Merbau Selatan Dalam II</p>
@@ -1041,9 +1074,8 @@ document.addEventListener('DOMContentLoaded', function () {
          <div class="bg-black rounded-lg overflow-hidden shadow-lg">
           <div class="relative aspect-video bg-black flex items-center justify-center">
            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
-             data-src="https://livepantau.semarangkota.go.id/2979559e-3211-4666-b332-eb83994b8533/video1_stream.m3u8"></video>
-           <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold animate-pulse pointer-events-none">● REC</div>
-           <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs pointer-events-none" id="timestamp8">--:--:--</div>
+             data-src="https://livepantau.semarangkota.go.id/b3d683cd-1119-4243-b350-3df467d48e69/video1_stream.m3u8"></video>
+           <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
           </div>
           <div class="bg-gray-800 text-white p-2 text-center">
            <p class="text-sm font-medium">📍 Jl. Merbau Selatan Dalam II</p>
@@ -1059,38 +1091,60 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="mb-8">
        <div class="bg-gradient-to-r from-pink-600 to-pink-700 text-white p-4 rounded-t-lg">
         <h3 class="text-lg font-bold flex items-center">📹 CCTV RT 5</h3>
-        <p class="text-sm opacity-90">Monitoring - 2 Camera - 2 view</p>
+        <p class="text-sm opacity-90">Monitoring - 4 Camera - 4 view</p>
        </div>
        <div class="bg-gray-100 p-4 rounded-b-lg">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-         <div class="bg-black rounded-lg overflow-hidden shadow-lg">
-          <div class="relative aspect-video bg-black flex items-center justify-center">
-           <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
-             data-src="https://livepantau.semarangkota.go.id/02fd87df-1cf0-4b1b-882f-ce719eee715e/video1_stream.m3u8"></video>
-           <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold animate-pulse pointer-events-none">● REC</div>
-           <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs pointer-events-none" id="timestamp9">--:--:--</div>
-          </div>
-          <div class="bg-gray-800 text-white p-2 text-center">
-           <p class="text-sm font-medium">📍 Posyandu</p>
-           <div class="flex justify-center items-center space-x-2 mt-1">
-            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span class="text-xs">Online (Aktif)</span>
+          <div class="bg-black rounded-lg overflow-hidden shadow-lg">
+           <div class="relative aspect-video bg-black flex items-center justify-center">
+            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
+              data-src="https://livepantau.semarangkota.go.id/9ffdac53-a02e-434b-8237-d4d9fa88dde9/video1_stream.m3u8"></video>
+            <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
+           </div>
+           <div class="bg-gray-800 text-white p-2 text-center">
+            <p class="text-sm font-medium">📍 POSYANDU</p>
+            <div class="flex justify-center items-center space-x-2 mt-1">
+             <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span class="text-xs">Online (Aktif)</span>
+            </div>
            </div>
           </div>
-         </div>
-         <div class="bg-black rounded-lg overflow-hidden shadow-lg">
-          <div class="relative aspect-video bg-black flex items-center justify-center">
-           <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
-             data-src="https://livepantau.semarangkota.go.id/02fd87df-1cf0-4b1b-882f-ce719eee715e/videoo1_stream.m3u8"></video>
-           <div class="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">🛠️ PERBAIKAN</div>
-           <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs pointer-events-none" id="timestamp10">--:--:--</div>
-          </div>
-          <div class="bg-gray-800 text-white p-2 text-center">
-           <p class="text-sm font-medium">📍 Pos</p>
-           <div class="flex justify-center items-center space-x-2 mt-1">
-            <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div><span class="text-xs text-yellow-300">Perbaikan</span>
+          <div class="bg-black rounded-lg overflow-hidden shadow-lg">
+           <div class="relative aspect-video bg-black flex items-center justify-center">
+            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
+              data-src="https://livepantau.semarangkota.go.id/34d737fa-9235-40f3-bb4c-db2369ee69f9/video1_stream.m3u8"></video>
+            <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
+           </div>
+           <div class="bg-gray-800 text-white p-2 text-center">
+            <p class="text-sm font-medium">📍 POS</p>
+            <div class="flex justify-center items-center space-x-2 mt-1">
+             <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span class="text-xs">Online (Aktif)</span>
+            </div>
            </div>
           </div>
-         </div>
+          <div class="bg-black rounded-lg overflow-hidden shadow-lg">
+           <div class="relative aspect-video bg-black flex items-center justify-center">
+            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
+              data-src="https://livepantau.semarangkota.go.id/f1845bcd-da18-4da7-82a3-cd78581bebae/video1_stream.m3u8"></video>
+            <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
+           </div>
+           <div class="bg-gray-800 text-white p-2 text-center">
+            <p class="text-sm font-medium">📍 Sumber Air</p>
+            <div class="flex justify-center items-center space-x-2 mt-1">
+             <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span class="text-xs">Online (Aktif)</span>
+            </div>
+           </div>
+          </div>
+          <div class="bg-black rounded-lg overflow-hidden shadow-lg">
+           <div class="relative aspect-video bg-black flex items-center justify-center">
+            <video class="hls-live w-full h-full object-contain" controls autoplay muted playsinline
+              data-src="https://livepantau.semarangkota.go.id/f1845bcd-da18-4da7-82a3-cd78581bebaeee/video1_stream.m3u8"></video>
+            <div class="cam-badge absolute top-2 right-2 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold pointer-events-none">⏳ MEMUAT</div>
+           </div>
+           <div class="bg-gray-800 text-white p-2 text-center">
+            <p class="text-sm font-medium">📍 Tandon Air</p>
+            <div class="flex justify-center items-center space-x-2 mt-1"><div class="cam-dot w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div><span class="cam-text text-xs text-gray-300">Memuat...</span><button type="button" class="cam-retry text-xs text-blue-300 hover:text-blue-200 underline" onclick="retryCamera(this)">🔄 Muat ulang</button></div>
+           </div>
+          </div>
         </div>
        </div>
       </div><!-- /CCTV RT 5 -->
@@ -5426,6 +5480,43 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
 
         const NAMA_BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
+        // Parse tanggal string lengkap -> {day, month, year} atau null.
+        // Mendukung YYYY-MM-DD, DD/MM/YYYY, D-M-YY, "12 Januari 2025", dsb.
+        function parseTanggalLengkap(str) {
+            if (!str) return null;
+            const s = String(str).trim();
+            // ISO: YYYY-MM-DD
+            let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if (m) return { day: +m[3], month: +m[2], year: +m[1] };
+            // DD/MM/YYYY atau DD-MM-YYYY
+            m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/);
+            if (m) {
+                let y = +m[3]; if (y < 100) y += 2000;
+                return { day: +m[1], month: +m[2], year: y };
+            }
+            // "12 Januari 2025" atau "12 Jan 2025"
+            const bulanMap = { jan:1, januari:1, feb:2, februari:2, mar:3, maret:3, apr:4, april:4, mei:5, jun:6, juni:6, jul:7, juli:7, agu:8, agt:8, agustus:8, sep:9, sept:9, september:9, okt:10, oktober:10, nov:11, november:11, des:12, desember:12 };
+            m = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+            if (m) {
+                const b = bulanMap[m[2].toLowerCase()];
+                if (b) return { day: +m[1], month: b, year: +m[3] };
+            }
+            // Fallback: Date.parse
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) return { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() };
+            return null;
+        }
+
+        // Format tanggal menjadi "hari/bulan/tahun" (DD/MM/YYYY) konsisten.
+        // Bila parsing gagal, kembalikan string aslinya.
+        function formatTanggal(str) {
+            const p = parseTanggalLengkap(str);
+            if (!p) return (str != null ? String(str) : '-');
+            const dd = String(p.day).padStart(2, '0');
+            const mm = String(p.month).padStart(2, '0');
+            return `${dd}/${mm}/${p.year}`;
+        }
+
         function populateFilterBulanKas(data) {
             const select = document.getElementById('filterBulanKas');
             if (!select) return;
@@ -5467,19 +5558,9 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
             if (kasEl) kasEl.classList.remove('hidden');
             if (totalEl) totalEl.classList.remove('hidden');
 
-            if (mode === 'ringkasan') {
-                // Mode Ringkasan: tampilkan SEMUA transaksi tetap dalam bentuk baris,
-                // dan sisipkan baris ringkasan di akhir tiap bulan.
-                if (filterSel) filterSel.disabled = true;
-                window.__kasMode = 'ringkasan';
-                renderKeuanganTables(all);
-                if (info) info.textContent = `Mode Ringkasan — ${all.length} transaksi total, dengan ringkasan tiap akhir bulan`;
-                return;
-            }
-
-            // Mode detail (default)
+            // Filter bulan berlaku untuk kedua mode
             if (filterSel) filterSel.disabled = false;
-            window.__kasMode = 'detail';
+            window.__kasMode = mode === 'ringkasan' ? 'ringkasan' : 'detail';
 
             const select = document.getElementById('filterBulanKas');
             const key = select ? select.value : 'all';
@@ -5495,6 +5576,8 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
             } else {
                 label = `Menampilkan semua transaksi (${all.length})`;
             }
+            if (mode === 'ringkasan') label += ' — dengan baris ringkasan tiap akhir bulan';
+
             if (info) info.textContent = label;
             renderKeuanganTables(filtered);
         }
@@ -5559,7 +5642,7 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                     const pIn = (it.pemasukanSosial||0) + (it.pemasukanKas||0);
                     const pOut = (it.pengeluaranSosial||0) + (it.pengeluaranKas||0);
                     return `<tr class="hover:bg-gray-50">
-                        <td class="px-2 py-2 text-xs text-gray-700 whitespace-nowrap">${escapeHtml(it.tanggal||'-')}</td>
+                        <td class="px-2 py-2 text-xs text-gray-700 whitespace-nowrap">${escapeHtml(formatTanggal(it.tanggal))}</td>
                         <td class="px-2 py-2 text-xs text-gray-800">${escapeHtml(it.uraian||'-')}</td>
                         <td class="px-2 py-2 text-xs text-green-700 whitespace-nowrap">${pIn>0 ? fmt(pIn) : '-'}</td>
                         <td class="px-2 py-2 text-xs text-red-700 whitespace-nowrap">${pOut>0 ? fmt(pOut) : '-'}</td>
@@ -5688,7 +5771,7 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                 
                 row.innerHTML = `
                     <td class="px-2 py-2 text-xs text-gray-900">
-                        <div class="font-medium">${item.tanggal}</div>
+                        <div class="font-medium">${formatTanggal(item.tanggal)}</div>
                         <span class="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium ${getJenisKegiatanColor(item.jenisKegiatan)}">
                             ${getJenisKegiatanIcon(item.jenisKegiatan)}
                         </span>
