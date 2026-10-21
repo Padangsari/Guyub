@@ -4735,22 +4735,41 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
 
         function createKontakCard(kontak, compact) {
             const card = document.createElement('article');
+            const jabatanLower = kontak.jabatan.toLocaleLowerCase('id-ID');
+            const iconData = jabatanLower.includes('ketua')
+                ? { icon: '👑', bgColor: 'bg-red-500', cardColor: 'bg-red-50', borderColor: 'border-red-100' }
+                : jabatanLower.includes('sekretaris')
+                    ? { icon: '📝', bgColor: 'bg-green-500', cardColor: 'bg-green-50', borderColor: 'border-green-100' }
+                    : jabatanLower.includes('bendahara')
+                        ? { icon: '💰', bgColor: 'bg-yellow-500', cardColor: 'bg-yellow-50', borderColor: 'border-yellow-100' }
+                        : jabatanLower.includes('perlengkapan')
+                            ? { icon: '📦', bgColor: 'bg-purple-500', cardColor: 'bg-purple-50', borderColor: 'border-purple-100' }
+                            : jabatanLower.includes('sosial') || jabatanLower.includes('kemasyarakatan') || jabatanLower.includes('humas')
+                                ? { icon: '🤝', bgColor: 'bg-pink-500', cardColor: 'bg-pink-50', borderColor: 'border-pink-100' }
+                                : jabatanLower.includes('pembangunan') || jabatanLower.includes('pemeliharaan') || jabatanLower.includes('fasilitas')
+                                    ? { icon: '🏗️', bgColor: 'bg-orange-500', cardColor: 'bg-orange-50', borderColor: 'border-orange-100' }
+                                    : jabatanLower.includes('darurat') || jabatanLower.includes('emergency')
+                                        ? { icon: '🚨', bgColor: 'bg-red-500', cardColor: 'bg-red-50', borderColor: 'border-red-100' }
+                                        : jabatanLower.includes('polrestabes') || jabatanLower.includes('polres') || jabatanLower.includes('polisi') || jabatanLower.includes('police')
+                                            ? { icon: '🚔', bgColor: 'bg-blue-700', cardColor: 'bg-blue-50', borderColor: 'border-blue-100' }
+                                            : jabatanLower.includes('basarnas') || jabatanLower.includes('sar') || jabatanLower.includes('search and rescue')
+                                                ? { icon: '🚁', bgColor: 'bg-orange-600', cardColor: 'bg-orange-50', borderColor: 'border-orange-100' }
+                                                : jabatanLower.includes('pmi') || jabatanLower.includes('palang merah') || jabatanLower.includes('red cross')
+                                                    ? { icon: '🏥', bgColor: 'bg-red-700', cardColor: 'bg-red-50', borderColor: 'border-red-100' }
+                                                    : jabatanLower.includes('pemadam') || jabatanLower.includes('damkar')
+                                                        ? { icon: '🚒', bgColor: 'bg-red-600', cardColor: 'bg-red-50', borderColor: 'border-red-100' }
+                                                        : jabatanLower.includes('ambulans') || jabatanLower.includes('medis')
+                                                            ? { icon: '🚑', bgColor: 'bg-green-600', cardColor: 'bg-green-50', borderColor: 'border-green-100' }
+                                                            : { icon: '👤', bgColor: 'bg-blue-500', cardColor: 'bg-blue-50', borderColor: 'border-blue-100' };
             card.className = compact
-                ? 'flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 transition hover:shadow-md'
+                ? `flex items-center gap-3 rounded-xl border ${iconData.borderColor} ${iconData.cardColor} p-3 transition hover:shadow-md`
                 : 'flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md';
 
             const details = document.createElement('div');
             details.className = 'flex min-w-0 flex-1 items-start gap-3';
             const icon = document.createElement('span');
-            icon.className = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-xl';
-            icon.textContent = /polisi|polres|polrestabes/i.test(kontak.jabatan) ? '🚔'
-                : /ambulans|medis/i.test(kontak.jabatan) ? '🚑'
-                : /damkar|pemadam/i.test(kontak.jabatan) ? '🚒'
-                : /ketua/i.test(kontak.jabatan) ? '👑'
-                : /bendahara/i.test(kontak.jabatan) ? '💰'
-                : /sekretaris/i.test(kontak.jabatan) ? '📝'
-                : /darurat|emergency/i.test(kontak.jabatan) ? '🚨'
-                : '📞';
+            icon.className = `flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${compact ? iconData.bgColor : 'bg-blue-100'} text-xl ${compact ? 'text-white shadow-md' : ''}`;
+            icon.textContent = iconData.icon;
 
             const text = document.createElement('div');
             text.className = 'min-w-0 flex-1';
