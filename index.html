@@ -328,15 +328,42 @@ function submitLaporRT(event) {
  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
 <script>
 function camCard(video){ return video.closest('.bg-black.rounded-lg') || video.parentElement; }
+function ensureCamControls(video){
+  const card = camCard(video);
+  const statusRow = card && card.querySelector('.bg-gray-800.text-white .flex.items-center, .bg-gray-800.text-white .flex.justify-center');
+  if (!statusRow) return;
+
+  let dot = statusRow.querySelector('.cam-dot');
+  if (!dot) {
+    dot = document.createElement('span');
+    dot.className = 'cam-dot w-2 h-2 bg-gray-400 rounded-full animate-pulse';
+  }
+  let text = statusRow.querySelector('.cam-text');
+  if (!text) {
+    text = document.createElement('span');
+    text.className = 'cam-text text-xs text-gray-300';
+    text.textContent = 'Memuat...';
+  }
+  let retry = statusRow.querySelector('.cam-retry');
+  if (!retry) {
+    retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'cam-retry text-xs text-blue-300 hover:text-blue-200 underline';
+    retry.textContent = '🔄 Muat ulang';
+    retry.addEventListener('click', function(){ retryCamera(retry); });
+  }
+  statusRow.replaceChildren(dot, text, retry);
+}
 function setCamStatus(video, status){
   const card = camCard(video); if(!card) return;
+  ensureCamControls(video);
   const badge = card.querySelector('.cam-badge');
   const dot = card.querySelector('.cam-dot');
   const text = card.querySelector('.cam-text');
   const map = {
     loading: ['⏳ MEMUAT','bg-gray-600','bg-gray-400','text-gray-300','Memuat...'],
     online:  ['● REC','bg-red-500','bg-green-400','text-green-300','Aktif'],
-    offline: ['🛠️ PERBAIKAN','bg-yellow-500','bg-yellow-400','text-yellow-300','Perbaikan']
+    offline: ['🛠️ PERBAIKAN','bg-yellow-500','bg-yellow-400','text-yellow-300','Offline - coba muat ulang']
   };
   const [label,badgeBg,dotBg,textCls,statusText] = map[status] || map.loading;
   if(badge){
@@ -346,29 +373,111 @@ function setCamStatus(video, status){
   if(dot) dot.className = 'cam-dot w-2 h-2 ' + dotBg + ' rounded-full animate-pulse';
   if(text){ text.textContent = statusText; text.className = 'cam-text text-xs ' + textCls; }
 }
-function initHlsPlayer(video) {
+function stopCamPlayback(video){
+  if (video.__retryTimer) {
+    clearTimeout(video.__retryTimer);
+    video.__retryTimer = null;
+  }
+  if (video.__watchdog) {
+    clearInterval(video.__watchdog);
+    video.__watchdog = null;
+  }
+  if (video.__camListeners) {
+    Object.entries(video.__camListeners).forEach(function(entry){
+      video.removeEventListener(entry[0], entry[1]);
+    });
+    video.__camListeners = null;
+  }
+  if (video.__hls) {
+    video.__hls.destroy();
+    video.__hls = null;
+  }
+}
+function initHlsPlayer(video){
   const src = video.dataset.src;
   if (!src) return;
-  setCamStatus(video, 'loading');
+
+  const attemptId = (video.__attemptId || 0) + 1;
+  video.__attemptId = attemptId;
+  stopCamPlayback(video);
+  video.__failureHandled = false;
+  video.__lastPlaybackAt = 0;
+  video.__attemptStartedAt = Date.now();
   video.__retries = video.__retries || 0;
-  if (video.__hls) { try { video.__hls.destroy(); } catch(e){} video.__hls = null; }
-  const ok = function(){ video.__retries = 0; setCamStatus(video, 'online'); };
-  video.addEventListener('playing', ok);
-  video.addEventListener('loadeddata', ok);
-  const fail = function(){
-    setCamStatus(video, 'offline');
-    if (video.__retries < 3) { video.__retries++; setTimeout(function(){ initHlsPlayer(video); }, 5000); }
+  setCamStatus(video, 'loading');
+
+  const isCurrentAttempt = function(){ return video.__attemptId === attemptId; };
+  const markPlaying = function(){
+    if (!isCurrentAttempt()) return;
+    video.__lastPlaybackAt = Date.now();
+    video.__retries = 0;
+    setCamStatus(video, 'online');
   };
+  const fail = function(){
+    if (!isCurrentAttempt() || video.__failureHandled) return;
+    video.__failureHandled = true;
+    setCamStatus(video, 'offline');
+    if (video.__watchdog) {
+      clearInterval(video.__watchdog);
+      video.__watchdog = null;
+    }
+    if (video.__hls) {
+      video.__hls.destroy();
+      video.__hls = null;
+    }
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+    if (video.__retries < 3) {
+      video.__retries++;
+      video.__retryTimer = setTimeout(function(){
+        video.__retryTimer = null;
+        initHlsPlayer(video);
+      }, 5000);
+    }
+  };
+  const onError = function(){ fail(); };
+  const onTimeUpdate = function(){
+    if (!isCurrentAttempt() || video.paused || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+    video.__lastPlaybackAt = Date.now();
+    video.__retries = 0;
+    setCamStatus(video, 'online');
+  };
+  video.__camListeners = {
+    playing: markPlaying,
+    loadeddata: markPlaying,
+    timeupdate: onTimeUpdate,
+    error: onError,
+    ended: fail
+  };
+  Object.entries(video.__camListeners).forEach(function(entry){
+    video.addEventListener(entry[0], entry[1]);
+  });
+
+  video.__watchdog = setInterval(function(){
+    if (!isCurrentAttempt() || video.paused) return;
+    const lastActivity = video.__lastPlaybackAt || video.__attemptStartedAt;
+    if (Date.now() - lastActivity > (video.__lastPlaybackAt ? 30000 : 45000)) fail();
+  }, 10000);
+
   if (window.Hls && window.Hls.isSupported()) {
-    const hls = new window.Hls({ lowLatencyMode: true, manifestLoadingMaxRetry: 2, levelLoadingMaxRetry: 2 });
+    const hls = new window.Hls({
+      lowLatencyMode: true,
+      manifestLoadingMaxRetry: 2,
+      levelLoadingMaxRetry: 2,
+      fragLoadingMaxRetry: 2
+    });
     video.__hls = hls;
+    hls.on(window.Hls.Events.MANIFEST_PARSED, function(){
+      if (isCurrentAttempt()) video.play().catch(function(){});
+    });
+    hls.on(window.Hls.Events.ERROR, function(_event, data){
+      if (isCurrentAttempt() && data && data.fatal) fail();
+    });
     hls.loadSource(src);
     hls.attachMedia(video);
-    hls.on(window.Hls.Events.MANIFEST_PARSED, function(){ video.play().catch(function(){}); });
-    hls.on(window.Hls.Events.ERROR, function(_e, data){ if (data && data.fatal) { try { hls.destroy(); } catch(err){} fail(); } });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     video.src = src;
-    video.addEventListener('error', fail, { once: true });
     video.play().catch(function(){});
   } else {
     fail();
@@ -377,13 +486,22 @@ function initHlsPlayer(video) {
 function retryCamera(btn){
   const card = btn.closest('.bg-black.rounded-lg');
   const video = card && card.querySelector('video.hls-live');
-  if (video) { video.__retries = 0; initHlsPlayer(video); }
+  if (video) {
+    video.__retries = 0;
+    initHlsPlayer(video);
+  }
 }
 function refreshAllCameras(){
-  document.querySelectorAll('video.hls-live').forEach(function(v){ v.__retries = 0; initHlsPlayer(v); });
+  document.querySelectorAll('video.hls-live').forEach(function(video){
+    video.__retries = 0;
+    initHlsPlayer(video);
+  });
 }
-document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('video.hls-live').forEach(initHlsPlayer);
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('video.hls-live').forEach(function(video){
+    ensureCamControls(video);
+    initHlsPlayer(video);
+  });
 });
 </script>
 </head>
@@ -597,15 +715,17 @@ document.addEventListener('DOMContentLoaded', function () {
     <section id="infoKontak" class="info-sub-content" aria-label="Daftar kontak penting">
       <div class="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-200">
         <div class="bg-gradient-to-r from-blue-700 via-indigo-700 to-violet-700 p-6 text-white sm:p-8">
-          <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p class="text-sm font-semibold uppercase tracking-wider text-blue-100">Direktori warga</p>
-              <h2 class="mt-1 text-2xl font-bold sm:text-3xl">Kontak Penting</h2>
-              <p class="mt-2 max-w-xl text-sm text-blue-100">Temukan kontak pengurus dan layanan yang dibutuhkan. Hubungi atau bagikan langsung dari ponsel Anda.</p>
+          <div>
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold uppercase tracking-wider text-blue-100">Direktori warga</p>
+                <h2 class="mt-1 text-2xl font-bold sm:text-3xl">Kontak Penting</h2>
+              </div>
+              <button id="kontakReloadButton" type="button" onclick="loadKontakPenting()" aria-label="Muat ulang kontak penting" title="Muat ulang kontak penting" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-xl text-white ring-1 ring-white/30 transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/70">
+                <span id="kontakReloadIcon" aria-hidden="true">⟳</span>
+              </button>
             </div>
-            <button type="button" onclick="loadKontakPenting()" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white/15 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/30 transition hover:bg-white/25">
-              <span aria-hidden="true">🔄</span> Muat ulang
-            </button>
+            <p class="mt-2 max-w-xl text-sm text-blue-100">Temukan kontak pengurus dan layanan yang dibutuhkan. Hubungi atau bagikan langsung dari ponsel Anda.</p>
           </div>
         </div>
         <div class="p-5 sm:p-7">
@@ -4881,6 +5001,14 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
         }
 
         async function loadKontakPenting() {
+            const reloadButton = document.getElementById('kontakReloadButton');
+            const reloadIcon = document.getElementById('kontakReloadIcon');
+            if (reloadButton) {
+                reloadButton.disabled = true;
+                reloadButton.classList.add('opacity-70', 'cursor-wait');
+            }
+            if (reloadIcon) reloadIcon.classList.add('animate-spin');
+
             try {
                 showNotification('📞 Memuat kontak penting...', 'info');
                 const response = await fetch(KONTAK_SHEET_URL);
@@ -4914,6 +5042,12 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                     message.textContent = `Gagal memuat kontak: ${error.message}`;
                     container.replaceChildren(message);
                 });
+            } finally {
+                if (reloadButton) {
+                    reloadButton.disabled = false;
+                    reloadButton.classList.remove('opacity-70', 'cursor-wait');
+                }
+                if (reloadIcon) reloadIcon.classList.remove('animate-spin');
             }
         }
         // Load Kegiatan Data - Version 66 SUPER FIXED WITH ENHANCED DEBUG
