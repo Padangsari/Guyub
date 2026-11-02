@@ -124,6 +124,13 @@
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+    @keyframes keuanganDetailSlideDown {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .keuangan-detail-slide-down {
+        animation: keuanganDetailSlideDown 0.25s ease-out;
+    }
     
     /* Custom scrollbar styles */
     .scrollbar-thin {
@@ -1999,6 +2006,46 @@ document.addEventListener('DOMContentLoaded', function() {
             
             result.push(current.trim());
             return result;
+        }
+
+        function parseCSVRows(csvText) {
+            const rows = [];
+            let row = [];
+            let field = '';
+            let inQuotes = false;
+            const text = String(csvText).replace(/^\uFEFF/, '');
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const next = text[i + 1];
+
+                if (char === '"') {
+                    if (inQuotes && next === '"') {
+                        field += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    row.push(field.trim());
+                    field = '';
+                } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                    row.push(field.trim());
+                    rows.push(row);
+                    row = [];
+                    field = '';
+                    if (char === '\r' && next === '\n') i++;
+                } else if ((char === '\n' || char === '\r') && inQuotes) {
+                    field += '\n';
+                    if (char === '\r' && next === '\n') i++;
+                } else {
+                    field += char;
+                }
+            }
+
+            row.push(field.trim());
+            if (row.length > 1 || row[0] !== '') rows.push(row);
+            return rows;
         }
 
         // Currency Formatter - FIXED TO HANDLE NEGATIVE VALUES PROPERLY
@@ -5734,18 +5781,17 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                     preview: csvText.substring(0, 100)
                 });
                 
-                const allLines = csvText.split('\n');
-                debugLog('📋 Step 6: Lines split', { totalLines: allLines.length });
+                const allRows = parseCSVRows(csvText);
+                debugLog('📋 Step 6: CSV rows parsed', { totalRows: allRows.length });
                 
                 const keuanganData = [];
                 
                 debugLog('🔍 Step 7: Starting detailed row analysis...');
                 
                 // Show structure for first 10 rows only (reduced for performance)
-                for (let debugIndex = 0; debugIndex < Math.min(10, allLines.length); debugIndex++) {
-                    const debugLine = allLines[debugIndex];
-                    if (debugLine && debugLine.trim()) {
-                        const debugValues = parseCSVLine(debugLine);
+                for (let debugIndex = 0; debugIndex < Math.min(10, allRows.length); debugIndex++) {
+                    const debugValues = allRows[debugIndex];
+                    if (debugValues && debugValues.some(value => value !== '')) {
                         debugLog(`🔎 Row ${debugIndex + 1}`, {
                             columns: debugValues.length,
                             preview: debugValues.slice(0, 5)
@@ -5756,14 +5802,8 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                 debugLog('🎯 Step 8: Starting data parsing from row 7 (B7)...');
                 
                 // Start from row 7 (index 6) - cell B7 as per specification
-                for (let rowIndex = 6; rowIndex < allLines.length; rowIndex++) {
-                    const line = allLines[rowIndex];
-                    
-                    if (!line || !line.trim()) {
-                        continue;
-                    }
-                    
-                    const values = parseCSVLine(line);
+                for (let rowIndex = 6; rowIndex < allRows.length; rowIndex++) {
+                    const values = allRows[rowIndex];
                     
                     if (values.length >= 8) {
                         const tanggal = values[1] ? values[1].trim() : ''; // Column B
@@ -5773,6 +5813,8 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                         const rawF = values[5] || ''; // Column F
                         const rawH = values[7] || ''; // Column H
                         const rawI = values[8] || ''; // Column I
+                        const rincian = values[10] ? values[10].trim() : ''; // Column K
+                        const nota = values[11] ? values[11].trim() : ''; // Column L
                         
                         // DEBUG: Show raw values for problematic transactions
                         if (uraian && uraian.toLowerCase().includes('santunan')) {
@@ -5915,7 +5957,9 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                                 pemasukanSosial: finalPemasukanSosial,
                                 pengeluaranSosial: finalPengeluaranSosial,
                                 pemasukanKas: finalPemasukanKas,
-                                pengeluaranKas: finalPengeluaranKas
+                                pengeluaranKas: finalPengeluaranKas,
+                                rincian,
+                                nota
                             };
                             
                             keuanganData.push(transactionData);
@@ -6371,6 +6415,198 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
             return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         }
 
+        function showKeuanganDetail(item, type, trigger) {
+            const tableBody = trigger.closest('tbody');
+            if (!tableBody) return;
+
+            const openRow = tableBody.querySelector('tr[data-keuangan-detail-row="true"]');
+            if (openRow) {
+                const openTrigger = openRow.previousElementSibling?.querySelector('[data-keuangan-detail-trigger]');
+                openRow.remove();
+                if (openTrigger) openTrigger.setAttribute('aria-expanded', 'false');
+                if (openTrigger === trigger) return;
+            }
+
+            const detailRow = document.createElement('tr');
+            detailRow.dataset.keuanganDetailRow = 'true';
+            const detailCell = document.createElement('td');
+            detailCell.colSpan = 5;
+            detailCell.className = 'border-b border-blue-100 bg-slate-50 p-3 sm:p-4';
+
+            const panel = document.createElement('div');
+            panel.className = 'keuangan-detail-slide-down grid grid-cols-1 gap-4 lg:grid-cols-2';
+
+            const detailPanel = document.createElement('section');
+            detailPanel.className = 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm';
+            const heading = document.createElement('h3');
+            heading.className = 'mb-3 text-base font-bold text-slate-800';
+            heading.textContent = item.uraian || 'Rincian transaksi';
+            detailPanel.appendChild(heading);
+
+            const entries = String(item.rincian || '').split(/[\r\n;|]+/)
+                .map(entry => entry.trim())
+                .filter(entry => entry && !/^(total|jumlah)\s*[:=]/i.test(entry))
+                .map(entryText => {
+                    const match = entryText.match(/^(.*?)(?:\s*(?:[:=]\s*)|\s+)(?:Rp\.?\s*)?(-?[\d.,]+)\s*(rb|ribu|k|jt|juta)?\s*$/i);
+                    if (!match || !match[1].trim()) return { label: entryText, rawAmount: null, unit: '' };
+                    const numberText = match[2].replace(/\./g, '').replace(',', '.');
+                    const value = Number(numberText);
+                    if (!Number.isFinite(value)) return { label: entryText, rawAmount: null, unit: '' };
+                    return { label: match[1].trim().replace(/[:=]\s*$/, ''), rawAmount: value, unit: (match[3] || '').toLowerCase() };
+                });
+
+            const pemasukan = type === 'sosial' ? item.pemasukanSosial : item.pemasukanKas;
+            const pengeluaran = type === 'sosial' ? item.pengeluaranSosial : item.pengeluaranKas;
+            const transactionAmount = pemasukan > 0 ? pemasukan : pengeluaran;
+            const bareAmounts = entries.filter(entry => entry.rawAmount !== null && !entry.unit);
+            const fixedAmount = entries.reduce((sum, entry) => {
+                if (entry.rawAmount === null) return sum;
+                if (entry.unit === 'rb' || entry.unit === 'ribu' || entry.unit === 'k') return sum + entry.rawAmount * 1000;
+                if (entry.unit === 'jt' || entry.unit === 'juta') return sum + entry.rawAmount * 1000000;
+                return sum;
+            }, 0);
+            const bareAmountSum = bareAmounts.reduce((sum, entry) => sum + entry.rawAmount, 0);
+            const bareAmountScale = bareAmountSum && transactionAmount
+                ? [1, 1000, 1000000].reduce((best, scale) =>
+                    Math.abs(fixedAmount + bareAmountSum * scale - transactionAmount) <
+                    Math.abs(fixedAmount + bareAmountSum * best - transactionAmount) ? scale : best, 1)
+                : 1;
+            const detailTotal = fixedAmount + bareAmountSum * bareAmountScale;
+
+            const list = document.createElement('div');
+            list.className = 'space-y-1 divide-y divide-slate-100';
+            entries.forEach(entryData => {
+                const line = document.createElement('div');
+                line.className = 'grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-2 text-sm';
+                const label = document.createElement('span');
+                label.className = 'break-words text-slate-700';
+                label.textContent = entryData.label;
+                const amount = document.createElement('span');
+                amount.className = 'whitespace-nowrap text-right font-medium tabular-nums text-slate-800';
+                if (entryData.rawAmount === null) {
+                    amount.textContent = '';
+                } else {
+                    const scale = entryData.unit === 'rb' || entryData.unit === 'ribu' || entryData.unit === 'k'
+                        ? 1000
+                        : entryData.unit === 'jt' || entryData.unit === 'juta'
+                            ? 1000000
+                            : bareAmountScale;
+                    amount.textContent = `Rp ${formatCurrency(entryData.rawAmount * scale)}`;
+                }
+                line.append(label, amount);
+                list.appendChild(line);
+            });
+            detailPanel.appendChild(list);
+
+            const totalLine = document.createElement('div');
+            totalLine.className = 'mt-3 flex items-center justify-between border-t-2 border-slate-200 pt-3 font-bold text-slate-900';
+            const totalLabel = document.createElement('span');
+            totalLabel.textContent = 'Total rincian';
+            const totalValue = document.createElement('span');
+            totalValue.className = 'whitespace-nowrap text-right tabular-nums';
+            totalValue.textContent = `Rp ${formatCurrency(detailTotal)}`;
+            totalLine.append(totalLabel, totalValue);
+            detailPanel.appendChild(totalLine);
+
+            if (transactionAmount > 0 && entries.some(entry => entry.rawAmount !== null)) {
+                const matched = Math.abs(detailTotal - transactionAmount) < 1;
+                const comparison = document.createElement('p');
+                comparison.className = `mt-2 text-xs ${matched ? 'text-green-700' : 'text-amber-700'}`;
+                comparison.textContent = matched
+                    ? '✓ Total rincian sesuai dengan nilai transaksi.'
+                    : `Periksa kembali rincian: nilai transaksi Rp ${formatCurrency(transactionAmount)}.`;
+                detailPanel.appendChild(comparison);
+            }
+
+            const receiptPanel = document.createElement('section');
+            receiptPanel.className = 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm';
+            const receiptLabel = document.createElement('h3');
+            receiptLabel.className = 'mb-3 text-base font-bold text-slate-800';
+            const receiptSource = String(item.nota || '');
+            const receiptUrls = Array.from(receiptSource.matchAll(/https?:\/\/[^\s,;|<>]+/gi))
+                .map(match => match[0].replace(/[.,!?)\]}]+$/, ''));
+            receiptLabel.textContent = receiptUrls.length ? `Nota transaksi (${receiptUrls.length})` : 'Nota transaksi';
+            receiptPanel.appendChild(receiptLabel);
+
+            if (receiptUrls.length === 0) {
+                const noReceipt = document.createElement('p');
+                noReceipt.className = 'text-sm text-slate-500';
+                noReceipt.textContent = 'Belum ada tautan nota untuk transaksi ini.';
+                receiptPanel.appendChild(noReceipt);
+            } else {
+                const receiptGrid = document.createElement('div');
+                receiptGrid.className = 'grid grid-cols-1 gap-3 sm:grid-cols-2';
+                receiptUrls.forEach((rawUrl, index) => {
+                    try {
+                        const receiptUrl = new URL(rawUrl);
+                        if (receiptUrl.protocol !== 'https:') return;
+
+                        const receiptCard = document.createElement('div');
+                        receiptCard.className = 'space-y-2 rounded-lg border border-slate-200 p-2';
+                        const receiptLink = document.createElement('a');
+                        receiptLink.href = receiptUrl.href;
+                        receiptLink.target = '_blank';
+                        receiptLink.rel = 'noopener noreferrer';
+                        receiptLink.className = 'text-sm font-medium text-blue-700 underline hover:text-blue-900';
+                        receiptLink.textContent = `Buka nota ${index + 1}`;
+
+                        const imageSources = [receiptUrl.href];
+                        let fileId = null;
+                        if (receiptUrl.hostname === 'drive.google.com') {
+                            fileId = receiptUrl.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || receiptUrl.searchParams.get('id');
+                            if (fileId) {
+                                const encodedFileId = encodeURIComponent(fileId);
+                                imageSources.unshift(
+                                    `https://drive.google.com/thumbnail?id=${encodedFileId}&sz=w1200`,
+                                    `https://drive.google.com/uc?export=view&id=${encodedFileId}`
+                                );
+                            }
+                        }
+
+                        const receiptImage = document.createElement('img');
+                        let imageSourceIndex = 0;
+                        receiptImage.src = imageSources[imageSourceIndex];
+                        receiptImage.alt = `Pratinjau nota transaksi ${index + 1}`;
+                        receiptImage.loading = 'lazy';
+                        receiptImage.className = 'max-h-72 w-full rounded-lg bg-slate-50 object-contain';
+                        receiptImage.addEventListener('error', () => {
+                            imageSourceIndex++;
+                            if (imageSourceIndex < imageSources.length) {
+                                receiptImage.src = imageSources[imageSourceIndex];
+                                return;
+                            }
+                            if (fileId) {
+                                const preview = document.createElement('iframe');
+                                preview.src = `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
+                                preview.title = `Pratinjau nota transaksi ${index + 1}`;
+                                preview.loading = 'lazy';
+                                preview.className = 'h-72 w-full rounded-lg border border-slate-200';
+                                receiptCard.insertBefore(preview, receiptLink);
+                                receiptImage.hidden = true;
+                                return;
+                            }
+                            receiptImage.hidden = true;
+                            const fallback = document.createElement('p');
+                            fallback.className = 'text-xs text-slate-500';
+                            fallback.textContent = 'Pratinjau tidak tersedia. Pastikan tautan dapat diakses warga.';
+                            receiptCard.insertBefore(fallback, receiptLink);
+                        });
+                        receiptCard.append(receiptImage, receiptLink);
+                        receiptGrid.appendChild(receiptCard);
+                    } catch (error) {
+                        console.warn('Tautan nota transaksi tidak valid:', rawUrl, error);
+                    }
+                });
+                receiptPanel.appendChild(receiptGrid);
+            }
+
+            panel.append(detailPanel, receiptPanel);
+            detailCell.appendChild(panel);
+            detailRow.appendChild(detailCell);
+            trigger.closest('tr').after(detailRow);
+            trigger.setAttribute('aria-expanded', 'true');
+        }
+
         function renderTable(tableId, data, type) {
             const tableBody = document.getElementById(tableId);
             if (!tableBody) {
@@ -6425,7 +6661,9 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                         </span>
                     </td>
                     <td class="px-2 py-2 text-xs text-gray-900">
-                        <div class="font-medium truncate">${item.uraian}</div>
+                        <button type="button" data-keuangan-detail-trigger aria-expanded="false" class="block w-full truncate text-left font-medium hover:text-blue-700 focus:outline-none focus:underline" title="Klik untuk melihat rincian transaksi">
+                            ${escapeHtml(item.uraian || '-')}
+                        </button>
                     </td>
                     <td class="px-2 py-2 text-xs ${pemasukan > 0 ? 'text-green-600 font-bold' : 'text-gray-400'}">
                         ${pemasukan > 0 ? `+${formattedPemasukan}` : '-'}
@@ -6440,6 +6678,10 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                         </div>
                     </td>
                 `;
+
+                row.querySelector('button').addEventListener('click', event => {
+                    showKeuanganDetail(item, type, event.currentTarget);
+                });
                 
                 tableBody.appendChild(row);
                 
