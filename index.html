@@ -2952,19 +2952,16 @@ function downloadWargaPDF() {
                 }
                 
                 const csvText = await response.text();
-                const allLines = csvText.split('\n');
+                const allRows = parseCSVRows(csvText);
                 
                 const asetData = [];
                 
                 console.log('=== LOADING DATA ASET FROM GOOGLE SHEETS ===');
-                console.log(`Total lines: ${allLines.length}`);
+                console.log(`Total rows: ${allRows.length}`);
                 
                 // Parse data starting from B4 (row index 3, column offset 1)
-                for (let rowIndex = 3; rowIndex < allLines.length; rowIndex++) {
-                    const line = allLines[rowIndex];
-                    if (!line || !line.trim()) continue;
-                    
-                    const values = parseCSVLine(line);
+                for (let rowIndex = 3; rowIndex < allRows.length; rowIndex++) {
+                    const values = allRows[rowIndex];
                     
                     if (values.length >= 4) {
                         const namaAset = values[1] ? values[1].trim() : ''; // Column B - Nama Aset
@@ -2975,6 +2972,8 @@ function downloadWargaPDF() {
                         const tahunPembelian = values[6] ? values[6].trim() : ''; // Column G - Tahun Beli
                         const nilaiAset = values[7] ? values[7].trim() : ''; // Column H - Harga
                         const keterangan = values[8] ? values[8].trim() : ''; // Column I - Keterangan
+                        const rincian = values[9] ? values[9].trim() : ''; // Column J - Rincian
+                        const nota = values[10] ? values[10].trim() : ''; // Column K - URL Nota
                         
                         // Enhanced validation for aset data
                         if (namaAset && namaAset.length >= 2 && 
@@ -2990,7 +2989,9 @@ function downloadWargaPDF() {
                                 lokasi: lokasi || 'RT 01 RW VIII',
                                 tahunPembelian: tahunPembelian || '-',
                                 nilaiAset: nilaiAset || '0',
-                                keterangan: keterangan || ''
+                                keterangan: keterangan || '',
+                                rincian,
+                                nota
                             });
                             
                             console.log(`✅ Added aset: "${namaAset}" - ${jumlah} unit - ${kategori}`);
@@ -3185,7 +3186,7 @@ function downloadWargaPDF() {
                         </thead>
                         <tbody id="asetTableBody" class="bg-white divide-y divide-gray-200">
                             ${asetData.map((aset, index) => `
-                                <tr class="hover:bg-gray-50 transition-colors aset-row" 
+                                <tr class="cursor-pointer hover:bg-gray-50 transition-colors aset-row" 
                                     data-nama="${aset.namaAset.toLowerCase()}" 
                                     data-kategori="${aset.kategori.toLowerCase()}" 
                                     data-kondisi="${aset.kondisi.toLowerCase()}"
@@ -3199,7 +3200,10 @@ function downloadWargaPDF() {
                                                 ${getAsetIcon(aset.kategori).icon}
                                             </div>
                                             <div>
-                                                <p class="font-medium text-gray-900">${aset.namaAset}</p>
+                                                <button type="button" data-aset-detail-index="${index}" aria-expanded="false"
+                                                        class="text-left font-medium text-gray-900 hover:text-blue-700 hover:underline focus:outline-none focus:underline">
+                                                    ${escapeHtml(aset.namaAset)}
+                                                </button>
                                                 ${aset.keterangan ? `<p class="text-xs text-gray-500">${aset.keterangan}</p>` : ''}
                                             </div>
                                         </div>
@@ -3247,12 +3251,13 @@ function downloadWargaPDF() {
                                                     <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
                                                 </svg>
                                             </button>
-                                            <button onclick="viewAsetDetail('${aset.namaAset.replace(/'/g, "\\'")}', '${aset.jumlah}', '${aset.kategori}', '${aset.kondisi}', '${aset.keterangan.replace(/'/g, "\\'")}', '${aset.nilaiAset}')" 
-                                                    class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors text-xs">
+                                            <button type="button" data-aset-detail-index="${index}" aria-expanded="false" title="Lihat rincian dan nota aset"
+                                                    class="inline-flex items-center gap-1 rounded-lg bg-blue-500 px-2 py-2 text-xs text-white transition-colors hover:bg-blue-600">
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                                 </svg>
+                                                <span>Rincian</span>
                                             </button>
                                         </div>
                                     </td>
@@ -3276,6 +3281,22 @@ function downloadWargaPDF() {
                     </div>
                 </div>
             `;
+
+            asetContainer.querySelectorAll('[data-aset-detail-index]').forEach(button => {
+                button.addEventListener('click', event => {
+                    const index = Number(event.currentTarget.dataset.asetDetailIndex);
+                    if (Number.isInteger(index) && asetData[index]) {
+                        viewAsetDetail(asetData[index], event.currentTarget);
+                    }
+                });
+            });
+            asetContainer.querySelectorAll('#asetTableBody .aset-row').forEach(row => {
+                row.addEventListener('click', event => {
+                    if (event.target.closest('button, a')) return;
+                    const trigger = row.querySelector('[data-aset-detail-index]');
+                    if (trigger) trigger.click();
+                });
+            });
         }
 
         // Get aset icon based on category
@@ -3352,6 +3373,7 @@ function downloadWargaPDF() {
         function filterAsetData() {
             const searchTerm = document.getElementById('searchAset').value.toLowerCase();
             const rows = document.querySelectorAll('.aset-row');
+            closeAsetDetailRows(document.getElementById('asetTableBody'));
             
             rows.forEach(row => {
                 const nama = row.dataset.nama;
@@ -3369,6 +3391,7 @@ function downloadWargaPDF() {
         function filterByKategori() {
             const selectedKategori = document.getElementById('filterKategori').value.toLowerCase();
             const rows = document.querySelectorAll('.aset-row');
+            closeAsetDetailRows(document.getElementById('asetTableBody'));
             
             rows.forEach(row => {
                 const kategori = row.dataset.kategori;
@@ -3385,6 +3408,7 @@ function downloadWargaPDF() {
         function sortAsetData() {
             const sortBy = document.getElementById('sortAset').value;
             const tbody = document.getElementById('asetTableBody');
+            closeAsetDetailRows(tbody);
             const rows = Array.from(tbody.querySelectorAll('.aset-row'));
             
             rows.sort((a, b) => {
@@ -3418,13 +3442,23 @@ function downloadWargaPDF() {
                     default:
                         return 0;
                 }
-                
+
                 return aValue.localeCompare(bValue);
             });
             
             // Re-append sorted rows
             rows.forEach((row, index) => {
                 tbody.appendChild(row);
+            });
+        }
+
+        function closeAsetDetailRows(tableBody) {
+            if (!tableBody) return;
+            tableBody.querySelectorAll('tr[data-aset-detail-row="true"]').forEach(row => {
+                row.previousElementSibling?.querySelectorAll('[data-aset-detail-index]').forEach(trigger => {
+                    trigger.setAttribute('aria-expanded', 'false');
+                });
+                row.remove();
             });
         }
 
@@ -3444,9 +3478,186 @@ function downloadWargaPDF() {
             window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
         }
 
-        // View Aset Detail
-        function viewAsetDetail(namaAset, jumlah, kategori, kondisi, keterangan, nilaiAset) {
-            showNotification(`📦 Detail: ${namaAset} - ${jumlah} unit - ${kategori} - ${kondisi}`, 'info');
+        function viewAsetDetail(aset, trigger) {
+            const tableBody = trigger.closest('tbody');
+            if (!tableBody) return;
+
+            const openRow = tableBody.querySelector('tr[data-aset-detail-row="true"]');
+            if (openRow) {
+                const previousRow = openRow.previousElementSibling;
+                const sameTrigger = previousRow && previousRow.contains(trigger);
+                openRow.remove();
+                previousRow?.querySelectorAll('[data-aset-detail-index]').forEach(button => {
+                    button.setAttribute('aria-expanded', 'false');
+                });
+                if (sameTrigger) return;
+            }
+
+            const detailRow = document.createElement('tr');
+            detailRow.dataset.asetDetailRow = 'true';
+            const detailCell = document.createElement('td');
+            detailCell.colSpan = 9;
+            detailCell.className = 'border-b border-blue-100 bg-slate-50 p-3 sm:p-4';
+
+            const panel = document.createElement('div');
+            panel.className = 'keuangan-detail-slide-down grid grid-cols-1 gap-4 lg:grid-cols-2';
+
+            const detailPanel = document.createElement('section');
+            detailPanel.className = 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm';
+            const detailHeading = document.createElement('h3');
+            detailHeading.className = 'mb-3 text-base font-bold text-slate-800';
+            detailHeading.textContent = `Rincian aset: ${aset.namaAset}`;
+            detailPanel.appendChild(detailHeading);
+
+            const fields = [
+                ['Kategori', aset.kategori],
+                ['Kondisi', aset.kondisi],
+                ['Lokasi', aset.lokasi],
+                ['Jumlah', `${aset.jumlah} unit`],
+                ['Tahun pembelian', aset.tahunPembelian],
+                ['Nilai aset', Number(String(aset.nilaiAset).replace(/[^\d.-]/g, '')) > 0
+                    ? `Rp ${formatCurrency(Number(String(aset.nilaiAset).replace(/[^\d.-]/g, '')))}`
+                    : 'Tidak dinilai']
+            ];
+            const fieldGrid = document.createElement('dl');
+            fieldGrid.className = 'grid grid-cols-2 gap-2';
+            fields.forEach(([label, value]) => {
+                const field = document.createElement('div');
+                field.className = 'rounded-lg bg-slate-50 p-2';
+                const term = document.createElement('dt');
+                term.className = 'text-xs text-slate-500';
+                term.textContent = label;
+                const description = document.createElement('dd');
+                description.className = 'mt-1 break-words text-sm font-medium text-slate-800';
+                description.textContent = value || '-';
+                field.append(term, description);
+                fieldGrid.appendChild(field);
+            });
+            detailPanel.appendChild(fieldGrid);
+
+            if (aset.keterangan) {
+                const description = document.createElement('p');
+                description.className = 'mt-3 whitespace-pre-wrap break-words rounded-lg bg-slate-50 p-3 text-sm text-slate-700';
+                description.textContent = aset.keterangan;
+                detailPanel.appendChild(description);
+            }
+
+            const detailLines = String(aset.rincian || '').split(/[\r\n;|]+/)
+                .map(line => line.trim())
+                .filter(Boolean);
+            if (detailLines.length) {
+                const listHeading = document.createElement('h4');
+                listHeading.className = 'mb-2 mt-4 text-sm font-semibold text-slate-700';
+                listHeading.textContent = 'Rincian tambahan';
+                const list = document.createElement('ul');
+                list.className = 'space-y-1 rounded-lg bg-slate-50 p-3 text-sm text-slate-700';
+                detailLines.forEach(lineText => {
+                    const line = document.createElement('li');
+                    line.className = 'flex items-start gap-2';
+                    const bullet = document.createElement('span');
+                    bullet.className = 'text-blue-600';
+                    bullet.textContent = '•';
+                    const text = document.createElement('span');
+                    text.className = 'break-words';
+                    text.textContent = lineText;
+                    line.append(bullet, text);
+                    list.appendChild(line);
+                });
+                detailPanel.append(listHeading, list);
+            }
+
+            const receiptPanel = document.createElement('section');
+            receiptPanel.className = 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm';
+            const receiptHeading = document.createElement('h3');
+            receiptHeading.className = 'mb-3 text-base font-bold text-slate-800';
+            const receiptUrls = Array.from(String(aset.nota || '').matchAll(/https?:\/\/[^\s,;|<>]+/gi))
+                .map(match => match[0].replace(/[.,!?)\]}]+$/, ''));
+            receiptHeading.textContent = receiptUrls.length ? `Nota aset (${receiptUrls.length})` : 'Nota aset';
+            receiptPanel.appendChild(receiptHeading);
+
+            if (!receiptUrls.length) {
+                const noReceipt = document.createElement('p');
+                noReceipt.className = 'text-sm text-slate-500';
+                noReceipt.textContent = 'Belum ada tautan nota untuk aset ini.';
+                receiptPanel.appendChild(noReceipt);
+            } else {
+                const receiptGrid = document.createElement('div');
+                receiptGrid.className = 'grid grid-cols-1 gap-3 sm:grid-cols-2';
+                receiptUrls.forEach((rawUrl, index) => {
+                    try {
+                        const receiptUrl = new URL(rawUrl);
+                        if (receiptUrl.protocol !== 'https:') return;
+
+                        const card = document.createElement('div');
+                        card.className = 'space-y-2 rounded-lg border border-slate-200 p-2';
+                        const link = document.createElement('a');
+                        link.href = receiptUrl.href;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.className = 'text-sm font-medium text-blue-700 underline hover:text-blue-900';
+                        link.textContent = `Buka nota ${index + 1}`;
+
+                        let fileId = null;
+                        const imageSources = [receiptUrl.href];
+                        if (receiptUrl.hostname === 'drive.google.com') {
+                            fileId = receiptUrl.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || receiptUrl.searchParams.get('id');
+                            if (fileId) {
+                                const encodedFileId = encodeURIComponent(fileId);
+                                imageSources.unshift(
+                                    `https://drive.google.com/thumbnail?id=${encodedFileId}&sz=w1200`,
+                                    `https://drive.google.com/uc?export=view&id=${encodedFileId}`
+                                );
+                            }
+                        } else if (receiptUrl.hostname === '1drv.ms' || receiptUrl.hostname === 'onedrive.live.com') {
+                            const encodedShareUrl = btoa(String.fromCharCode(...new TextEncoder().encode(receiptUrl.href)))
+                                .replace(/\+/g, '-')
+                                .replace(/\//g, '_')
+                                .replace(/=+$/, '');
+                            imageSources.unshift(`https://api.onedrive.com/v1.0/shares/u!${encodedShareUrl}/root/content`);
+                        }
+
+                        const image = document.createElement('img');
+                        let sourceIndex = 0;
+                        image.src = imageSources[sourceIndex];
+                        image.alt = `Pratinjau nota aset ${index + 1}`;
+                        image.loading = 'lazy';
+                        image.className = 'max-h-72 w-full rounded-lg bg-slate-50 object-contain';
+                        image.addEventListener('error', () => {
+                            sourceIndex++;
+                            if (sourceIndex < imageSources.length) {
+                                image.src = imageSources[sourceIndex];
+                                return;
+                            }
+                            if (fileId) {
+                                const preview = document.createElement('iframe');
+                                preview.src = `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
+                                preview.title = `Pratinjau nota aset ${index + 1}`;
+                                preview.loading = 'lazy';
+                                preview.className = 'h-72 w-full rounded-lg border border-slate-200';
+                                card.insertBefore(preview, link);
+                                image.hidden = true;
+                                return;
+                            }
+                            image.hidden = true;
+                            const fallback = document.createElement('p');
+                            fallback.className = 'text-xs text-slate-500';
+                            fallback.textContent = 'Pratinjau tidak tersedia. Buka nota melalui tautan.';
+                            card.insertBefore(fallback, link);
+                        });
+                        card.append(image, link);
+                        receiptGrid.appendChild(card);
+                    } catch (error) {
+                        console.warn('Tautan nota aset tidak valid:', rawUrl, error);
+                    }
+                });
+                receiptPanel.appendChild(receiptGrid);
+            }
+
+            panel.append(detailPanel, receiptPanel);
+            detailCell.appendChild(panel);
+            detailRow.appendChild(detailCell);
+            trigger.closest('tr').after(detailRow);
+            trigger.setAttribute('aria-expanded', 'true');
         }
 
         // Load Iuran Data - ENHANCED WITH B6 FORMAT AND MONTHLY PAYMENT TRACKING
@@ -6561,6 +6772,12 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                                     `https://drive.google.com/uc?export=view&id=${encodedFileId}`
                                 );
                             }
+                        } else if (receiptUrl.hostname === '1drv.ms' || receiptUrl.hostname === 'onedrive.live.com') {
+                            const encodedShareUrl = btoa(String.fromCharCode(...new TextEncoder().encode(receiptUrl.href)))
+                                .replace(/\+/g, '-')
+                                .replace(/\//g, '_')
+                                .replace(/=+$/, '');
+                            imageSources.unshift(`https://api.onedrive.com/v1.0/shares/u!${encodedShareUrl}/root/content`);
                         }
 
                         const receiptImage = document.createElement('img');
