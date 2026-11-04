@@ -2672,21 +2672,42 @@ loadHistory('JADWAL');
             image.alt = `Pratinjau nota ${index + 1}`;
             image.loading = 'lazy';
             image.className = 'max-h-72 w-full rounded-lg bg-slate-50 object-contain';
+            const imageSources = [parsedUrl.href];
+            let fileId = null;
             if (parsedUrl.hostname === 'drive.google.com') {
-              const fileId = parsedUrl.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || parsedUrl.searchParams.get('id');
-              image.src = fileId
-                ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w1200`
-                : parsedUrl.href;
-            } else {
-              image.src = parsedUrl.href;
+              fileId = parsedUrl.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || parsedUrl.searchParams.get('id');
+              if (fileId) {
+                const encodedFileId = encodeURIComponent(fileId);
+                imageSources.unshift(
+                  `https://drive.google.com/thumbnail?id=${encodedFileId}&sz=w1200`,
+                  `https://drive.google.com/uc?export=view&id=${encodedFileId}`
+                );
+              }
             }
+            let imageSourceIndex = 0;
+            image.src = imageSources[imageSourceIndex];
             image.addEventListener('error', () => {
+              imageSourceIndex++;
+              if (imageSourceIndex < imageSources.length) {
+                image.src = imageSources[imageSourceIndex];
+                return;
+              }
+              if (fileId) {
+                const preview = document.createElement('iframe');
+                preview.src = `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
+                preview.title = `Pratinjau nota ${index + 1}`;
+                preview.loading = 'lazy';
+                preview.className = 'h-72 w-full rounded-lg border border-slate-200';
+                card.insertBefore(preview, link);
+                image.hidden = true;
+                return;
+              }
               image.hidden = true;
               const fallback = document.createElement('p');
               fallback.className = 'text-xs text-slate-500';
-              fallback.textContent = 'Pratinjau tidak tersedia. Buka nota melalui tautan.';
+              fallback.textContent = 'Pratinjau tidak tersedia. Pastikan tautan dapat diakses melalui link.';
               card.insertBefore(fallback, link);
-            }, { once: true });
+            });
             card.append(image, link);
             receiptGrid.appendChild(card);
           } catch (error) {
