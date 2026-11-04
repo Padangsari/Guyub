@@ -2586,9 +2586,12 @@ loadHistory('JADWAL');
         return url.href;
       };
       const encodedFileId = encodeURIComponent(fileId);
+      const googleusercontentUrl = new URL(`https://lh3.googleusercontent.com/d/${encodedFileId}`);
+      if (resourceKey) googleusercontentUrl.searchParams.set('resourcekey', resourceKey);
       return {
         fileId,
         imageUrls: [
+          googleusercontentUrl.href,
           withResourceKey(new URL(`https://drive.google.com/thumbnail?id=${encodedFileId}&sz=w1200`)),
           withResourceKey(new URL(`https://drive.google.com/uc?export=view&id=${encodedFileId}`)),
           parsedUrl.href
@@ -3478,7 +3481,28 @@ loadHistory('JADWAL');
                 clearTimeout(timeout);
                 image.removeEventListener('load', handleLoad);
                 image.removeEventListener('error', handleError);
-                if (!image.naturalWidth) image.hidden = true;
+                if (!image.naturalWidth) {
+                  image.hidden = true;
+                  const previewUrl = image.dataset.previewUrl;
+                  if (previewUrl && image.parentElement) {
+                    const preview = doc.createElement('iframe');
+                    preview.src = previewUrl;
+                    preview.title = image.alt;
+                    preview.className = 'receipt-print-preview';
+                    image.parentElement.insertBefore(preview, image.nextSibling);
+                    let previewSettled = false;
+                    let previewTimeout;
+                    const finishPreview = () => {
+                      if (previewSettled) return;
+                      previewSettled = true;
+                      clearTimeout(previewTimeout);
+                      setTimeout(resolve, 1200);
+                    };
+                    preview.addEventListener('load', finishPreview, { once: true });
+                    previewTimeout = setTimeout(finishPreview, 8000);
+                    return;
+                  }
+                }
                 resolve();
               };
               const handleLoad = () => {
@@ -3952,9 +3976,11 @@ loadHistory('JADWAL');
           try {
             const parsed = new URL(url);
             if (parsed.protocol !== 'https:') return '';
-            const imageUrl = getAdminDrivePreviewUrls(parsed).imageUrls[0];
-            const fallbackUrls = getAdminDrivePreviewUrls(parsed).imageUrls.slice(1);
-            return `<div class="receipt-print-item">${imageUrl ? `<img src="${esc(imageUrl)}" data-print-fallbacks="${esc(JSON.stringify(fallbackUrls))}" alt="Nota ${index + 1}">` : ''}<a href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer">Buka nota ${index + 1}</a></div>`;
+            const drivePreview = getAdminDrivePreviewUrls(parsed);
+            const imageUrl = drivePreview.imageUrls[0];
+            const fallbackUrls = drivePreview.imageUrls.slice(1);
+            const previewUrl = drivePreview.previewUrl || '';
+            return `<div class="receipt-print-item">${imageUrl ? `<img src="${esc(imageUrl)}" data-print-fallbacks="${esc(JSON.stringify(fallbackUrls))}" data-preview-url="${esc(previewUrl)}" alt="Nota ${index + 1}">` : ''}<a href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer">Buka nota ${index + 1}</a></div>`;
           } catch (error) {
             console.warn('URL nota tidak valid untuk laporan cetak:', url, error);
             return '';
@@ -4088,6 +4114,7 @@ loadHistory('JADWAL');
           .receipt-detail-total { margin-top:4px; padding-top:6px; border-top:1px solid #94a3b8; }
           .receipt-print-item { display:inline-block; vertical-align:top; width:120px; margin:6px 6px 0 0; }
           .receipt-print-item img { display:block; width:120px; max-height:150px; object-fit:contain; border:1px solid #cbd5e1; }
+          .receipt-print-preview { display:block; width:100%; height:240px; border:1px solid #cbd5e1; }
           .receipt-print-item a { display:block; margin-top:3px; word-break:break-all; }
           .muted { color:#64748b; font-size:10px; }
           .no-data { text-align:center; padding: 20px; color:#666; }
