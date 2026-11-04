@@ -2561,6 +2561,32 @@ loadHistory('JADWAL');
       });
     }
 
+    function getAdminDrivePreviewUrls(parsedUrl) {
+      if (!['drive.google.com', 'docs.google.com'].includes(parsedUrl.hostname)) {
+        return { fileId: null, imageUrls: [parsedUrl.href], previewUrl: null };
+      }
+
+      const fileId = parsedUrl.pathname.match(/\/(?:file\/d|document\/d|spreadsheets\/d|presentation\/d)\/([^/]+)/)?.[1]
+        || parsedUrl.searchParams.get('id');
+      if (!fileId) return { fileId: null, imageUrls: [parsedUrl.href], previewUrl: null };
+
+      const resourceKey = parsedUrl.searchParams.get('resourcekey');
+      const withResourceKey = url => {
+        if (resourceKey) url.searchParams.set('resourcekey', resourceKey);
+        return url.href;
+      };
+      const encodedFileId = encodeURIComponent(fileId);
+      return {
+        fileId,
+        imageUrls: [
+          withResourceKey(new URL(`https://drive.google.com/thumbnail?id=${encodedFileId}&sz=w1200`)),
+          withResourceKey(new URL(`https://drive.google.com/uc?export=view&id=${encodedFileId}`)),
+          parsedUrl.href
+        ],
+        previewUrl: withResourceKey(new URL(`https://drive.google.com/file/d/${encodedFileId}/preview`))
+      };
+    }
+
     function toggleAdminDetailRow(tbody, trigger, item, type) {
       const openRow = tbody.querySelector('tr[data-admin-detail-row]');
       if (openRow) {
@@ -2672,18 +2698,8 @@ loadHistory('JADWAL');
             image.alt = `Pratinjau nota ${index + 1}`;
             image.loading = 'lazy';
             image.className = 'max-h-72 w-full rounded-lg bg-slate-50 object-contain';
-            const imageSources = [parsedUrl.href];
-            let fileId = null;
-            if (parsedUrl.hostname === 'drive.google.com') {
-              fileId = parsedUrl.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || parsedUrl.searchParams.get('id');
-              if (fileId) {
-                const encodedFileId = encodeURIComponent(fileId);
-                imageSources.unshift(
-                  `https://drive.google.com/thumbnail?id=${encodedFileId}&sz=w1200`,
-                  `https://drive.google.com/uc?export=view&id=${encodedFileId}`
-                );
-              }
-            }
+            const drivePreview = getAdminDrivePreviewUrls(parsedUrl);
+            const imageSources = drivePreview.imageUrls;
             let imageSourceIndex = 0;
             image.src = imageSources[imageSourceIndex];
             image.addEventListener('error', () => {
@@ -2692,9 +2708,9 @@ loadHistory('JADWAL');
                 image.src = imageSources[imageSourceIndex];
                 return;
               }
-              if (fileId) {
+              if (drivePreview.previewUrl) {
                 const preview = document.createElement('iframe');
-                preview.src = `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
+                preview.src = drivePreview.previewUrl;
                 preview.title = `Pratinjau nota ${index + 1}`;
                 preview.loading = 'lazy';
                 preview.className = 'h-72 w-full rounded-lg border border-slate-200';
@@ -3861,12 +3877,7 @@ loadHistory('JADWAL');
           try {
             const parsed = new URL(url);
             if (parsed.protocol !== 'https:') return '';
-            const fileId = parsed.hostname === 'drive.google.com'
-              ? parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || parsed.searchParams.get('id')
-              : null;
-            const imageUrl = fileId
-              ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w1200`
-              : '';
+            const imageUrl = getAdminDrivePreviewUrls(parsed).imageUrls[0];
             return `<div class="receipt-print-item">${imageUrl ? `<img src="${esc(imageUrl)}" alt="Nota ${index + 1}">` : ''}<a href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer">Buka nota ${index + 1}</a></div>`;
           } catch (error) {
             console.warn('URL nota tidak valid untuk laporan cetak:', url, error);
