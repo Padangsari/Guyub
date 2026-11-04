@@ -3457,7 +3457,9 @@ loadHistory('JADWAL');
         doc.open();
         doc.write(html);
         doc.close();
+        let receiptImagesPromise;
         const waitForReceiptImages = () => {
+          if (receiptImagesPromise) return receiptImagesPromise;
           const images = Array.from(doc.querySelectorAll('img[data-print-fallbacks]'));
           const waitForImage = image => {
             let fallbacks = [];
@@ -3467,33 +3469,48 @@ loadHistory('JADWAL');
               console.warn('Daftar fallback gambar nota tidak valid:', error);
             }
             return new Promise(resolve => {
-              const checkImage = () => {
-                if (image.complete) {
-                  if (image.naturalWidth > 0 || !fallbacks.length) {
-                    resolve();
-                    return;
-                  }
-                  image.src = fallbacks.shift();
-                  checkImage();
-                  return;
-                }
-                image.addEventListener('load', resolve, { once: true });
-                image.addEventListener('error', () => {
-                  if (fallbacks.length) {
-                    image.src = fallbacks.shift();
-                    checkImage();
-                  } else {
-                    resolve();
-                  }
-                }, { once: true });
+              let finished = false;
+              let timeout;
+              const timeoutMs = 15000;
+              const finish = () => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(timeout);
+                image.removeEventListener('load', handleLoad);
+                image.removeEventListener('error', handleError);
+                if (!image.naturalWidth) image.hidden = true;
+                resolve();
               };
-              checkImage();
+              const handleLoad = () => {
+                if (image.naturalWidth) {
+                  if (typeof image.decode === 'function') {
+                    image.decode().then(finish, finish);
+                  } else {
+                    finish();
+                  }
+                }
+                else handleError();
+              };
+              const handleError = () => {
+                if (fallbacks.length) {
+                  clearTimeout(timeout);
+                  image.src = fallbacks.shift();
+                  timeout = setTimeout(finish, timeoutMs);
+                } else {
+                  finish();
+                }
+              };
+              image.addEventListener('load', handleLoad);
+              image.addEventListener('error', handleError);
+              timeout = setTimeout(finish, timeoutMs);
+              if (image.complete) {
+                if (image.naturalWidth) handleLoad();
+                else handleError();
+              }
             });
           };
-          return Promise.race([
-            Promise.all(images.map(waitForImage)),
-            new Promise(resolve => setTimeout(resolve, 5000))
-          ]);
+          receiptImagesPromise = Promise.all(images.map(waitForImage));
+          return receiptImagesPromise;
         };
         doc.querySelectorAll('[data-report-print]').forEach(button => {
           button.addEventListener('click', () => {
@@ -3903,7 +3920,7 @@ loadHistory('JADWAL');
           </a>
         </div></div></footer>
         <div class="noprint" style="margin-top:16px;text-align:center">
-          <button onclick="window.print()" style="padding:8px 16px;font-size:13px;cursor:pointer">🖨️ Cetak / Simpan sebagai PDF</button>
+          <button type="button" data-report-print style="padding:8px 16px;font-size:13px;cursor:pointer">🖨️ Cetak / Simpan sebagai PDF</button>
         </div>
       </body></html>`;
 
@@ -3936,7 +3953,7 @@ loadHistory('JADWAL');
             const parsed = new URL(url);
             if (parsed.protocol !== 'https:') return '';
             const imageUrl = getAdminDrivePreviewUrls(parsed).imageUrls[0];
-            const fallbackUrls = getAdminDrivePreviewUrls(parsed).imageUrls.slice(1, 2);
+            const fallbackUrls = getAdminDrivePreviewUrls(parsed).imageUrls.slice(1);
             return `<div class="receipt-print-item">${imageUrl ? `<img src="${esc(imageUrl)}" data-print-fallbacks="${esc(JSON.stringify(fallbackUrls))}" alt="Nota ${index + 1}">` : ''}<a href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer">Buka nota ${index + 1}</a></div>`;
           } catch (error) {
             console.warn('URL nota tidak valid untuk laporan cetak:', url, error);
