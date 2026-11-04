@@ -696,7 +696,10 @@
       <div class="card p-4 mb-4">
        <div class="flex flex-col md:flex-row md:items-center gap-3">
         <p class="text-xs text-gray-600 flex-1">Cetak laporan keuangan dalam 2 kategori: <strong>Kas</strong> dan <strong>Sosial</strong>.</p>
-        <button type="button" id="btn-cetak-kas" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow"> 🖨️ Cetak Laporan PDF </button>
+        <div class="flex flex-wrap gap-2">
+         <button type="button" id="btn-cetak-kas-ringkas" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow"> 🖨️ Cetak Ringkas </button>
+         <button type="button" id="btn-cetak-kas-detail" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow"> 🧾 Cetak + Rincian & Nota </button>
+        </div>
        </div>
       </div>
       <div class="card overflow-hidden">
@@ -1030,6 +1033,8 @@
       </div><!-- Form Pengeluaran -->
       <div id="form-pengeluaran" class="hidden"><label class="block text-gray-700 font-semibold mb-2">Jumlah Pengeluaran (Rp) *</label> <input type="number" name="jumlahPengeluaran" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
       </div>
+      <div><label class="block text-gray-700 font-semibold mb-2">Rincian Transaksi (opsional)</label><textarea name="rincian" rows="4" placeholder="Pisahkan tiap item dengan baris baru atau titik koma. Contoh: Konsumsi 250rb; Perlengkapan 100rb" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea></div>
+      <div><label class="block text-gray-700 font-semibold mb-2">URL Nota Google Drive (opsional)</label><textarea name="nota" rows="2" placeholder="Tempel satu atau beberapa link berbagi Google Drive" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea><p class="mt-1 text-xs text-gray-500">Atur akses file menjadi “Siapa saja yang memiliki link — Pelihat”. Pisahkan beberapa link dengan baris baru atau titik koma.</p></div>
      </div>
      <div class="mt-6 flex gap-3"><button type="submit" class="btn-primary text-white px-6 py-3 rounded-lg font-semibold flex-1"> <span class="submit-text">Simpan Data</span> <span class="submit-loading hidden"><span class="loading"></span> Menyimpan...</span> </button> <button type="button" class="close-modal bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold"> Batal </button>
      </div>
@@ -1089,6 +1094,8 @@
       </div>
       <div><label class="block text-gray-700 font-semibold mb-2">Keterangan</label> <textarea name="keterangan" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea>
       </div>
+      <div><label class="block text-gray-700 font-semibold mb-2">Rincian Aset (opsional)</label><textarea name="rincian" rows="3" placeholder="Rincian tambahan aset" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea></div>
+      <div><label class="block text-gray-700 font-semibold mb-2">URL Nota / Foto Google Drive (opsional)</label><textarea name="nota" rows="2" placeholder="Tempel link berbagi Google Drive" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea><p class="mt-1 text-xs text-gray-500">Atur akses file menjadi “Siapa saja yang memiliki link — Pelihat”.</p></div>
      </div>
      <div class="mt-6 flex gap-3"><button type="submit" class="btn-primary text-white px-6 py-3 rounded-lg font-semibold flex-1"> <span class="submit-text">Simpan Data</span> <span class="submit-loading hidden"><span class="loading"></span> Menyimpan...</span> </button> <button type="button" class="close-modal bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold"> Batal </button>
      </div>
@@ -1842,6 +1849,8 @@ loadHistory('KEGIATAN');
         tabType: 'LAPORAN_KAS',
         tanggal: formData.get('tanggal'),
         keterangan: formData.get('keterangan'),
+        rincian: formData.get('rincian') || '',
+        nota: formData.get('nota') || '',
         jenisTransaksi: jenisTransaksi,
         timestamp: timestamp
       };
@@ -2077,6 +2086,8 @@ loadHistory('KAS');
         tahunBeli: parseInt(formData.get('tahunBeli')),
         hargaTotal: parseFloat(formData.get('hargaTotal')),
         keterangan: formData.get('keterangan'),
+        rincian: formData.get('rincian') || '',
+        nota: formData.get('nota') || '',
         timestamp: timestamp
       };
       
@@ -2415,7 +2426,7 @@ loadHistory('JADWAL');
       // CLEAR TABEL DULU untuk cegah duplikat
       tbody.innerHTML = '';
       
-      tbody.innerHTML = data.map(item => {
+      tbody.innerHTML = data.map((item, rowIndex) => {
         switch(tabType) {
           case 'KEGIATAN':
             return `
@@ -2442,7 +2453,10 @@ loadHistory('JADWAL');
             return `
               <tr class="border-b border-gray-200 hover:bg-gray-50">
                 <td class="px-3 py-2">${tanggalFormatted}</td>
-                <td class="px-3 py-2">${item.keterangan || '-'}</td>
+                <td class="px-3 py-2">
+                  <div>${item.keterangan || '-'}</div>
+                  <button type="button" data-admin-detail="KAS" data-admin-detail-index="${rowIndex}" aria-expanded="false" class="mt-1 text-xs font-semibold text-blue-700 hover:underline">Rincian &amp; Nota</button>
+                </td>
                 <td class="px-3 py-2"><span class="px-2 py-1 ${item.jenisTransaksi === 'PEMASUKAN' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-full text-xs">${item.jenisTransaksi || '-'}</span></td>
                 <td class="px-3 py-2 text-green-600">${item.danaSosial > 0 ? formatRupiah(item.danaSosial) : '-'}</td>
                 <td class="px-3 py-2 text-green-600">${item.danaKas > 0 ? formatRupiah(item.danaKas) : '-'}</td>
@@ -2470,7 +2484,7 @@ loadHistory('JADWAL');
           case 'ASET':
             return `
               <tr class="border-b border-gray-200 hover:bg-gray-50">
-                <td class="px-3 py-2 font-semibold">${item.namaAset || '-'}</td>
+                <td class="px-3 py-2 font-semibold">${item.namaAset || '-'}<br><button type="button" data-admin-detail="ASET" data-admin-detail-index="${rowIndex}" aria-expanded="false" class="mt-1 text-xs font-semibold text-blue-700 hover:underline">Rincian &amp; Nota</button></td>
                 <td class="px-3 py-2">${item.jumlah || '-'}</td>
                 <td class="px-3 py-2">${item.jenisAset || '-'}</td>
                 <td class="px-3 py-2"><span class="px-2 py-1 ${item.kondisi === 'BAIK' ? 'bg-green-100 text-green-700' : item.kondisi === 'CUKUP' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'} rounded-full text-xs">${item.kondisi || '-'}</span></td>
@@ -2536,6 +2550,194 @@ loadHistory('JADWAL');
             `;
         }
       }).join('');
+
+      tbody.querySelectorAll('[data-admin-detail]').forEach(button => {
+        button.addEventListener('click', event => {
+          const trigger = event.currentTarget;
+          const rowIndex = Number(trigger.dataset.adminDetailIndex);
+          const item = data[rowIndex];
+          if (item) toggleAdminDetailRow(tbody, trigger, item, trigger.dataset.adminDetail);
+        });
+      });
+    }
+
+    function toggleAdminDetailRow(tbody, trigger, item, type) {
+      const openRow = tbody.querySelector('tr[data-admin-detail-row]');
+      if (openRow) {
+        const previousRow = openRow.previousElementSibling;
+        const sameRow = previousRow === trigger.closest('tr');
+        openRow.remove();
+        previousRow?.querySelectorAll('[data-admin-detail]').forEach(button => button.setAttribute('aria-expanded', 'false'));
+        if (sameRow) return;
+      }
+
+      const row = document.createElement('tr');
+      row.dataset.adminDetailRow = 'true';
+      const cell = document.createElement('td');
+      cell.colSpan = type === 'KAS' ? 7 : 9;
+      cell.className = 'border-b border-blue-100 bg-slate-50 p-3 sm:p-4';
+
+      const grid = document.createElement('div');
+      grid.className = 'grid grid-cols-1 gap-4 lg:grid-cols-2';
+      const details = document.createElement('section');
+      details.className = 'rounded-xl border border-slate-200 bg-white p-4';
+      const title = document.createElement('h3');
+      title.className = 'mb-3 font-bold text-slate-800';
+      title.textContent = type === 'KAS' ? (item.keterangan || 'Rincian transaksi') : (item.namaAset || 'Rincian aset');
+      details.appendChild(title);
+
+      if (type === 'ASET') {
+        const detailText = document.createElement('p');
+        detailText.className = 'whitespace-pre-wrap break-words rounded-lg bg-slate-50 p-3 text-sm text-slate-700';
+        detailText.textContent = [item.keterangan, item.rincian].filter(Boolean).join('\n\n') || 'Belum ada rincian tambahan.';
+        details.appendChild(detailText);
+      } else {
+        const transactionAmount = Number(item.jumlahPengeluaran) > 0
+          ? Number(item.jumlahPengeluaran)
+          : Number(item.danaSosial || 0) + Number(item.danaKas || 0);
+        const parsedDetails = parseAdminFinancialDetails(item.rincian, transactionAmount);
+        const list = document.createElement('div');
+        list.className = 'divide-y divide-slate-100';
+        if (!parsedDetails.entries.length) {
+          const empty = document.createElement('p');
+          empty.className = 'rounded-lg bg-slate-50 p-3 text-sm text-slate-500';
+          empty.textContent = 'Belum ada rincian tambahan.';
+          list.appendChild(empty);
+        }
+        parsedDetails.entries.forEach(entryData => {
+          const line = document.createElement('div');
+          line.className = 'grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-2 text-sm';
+          const label = document.createElement('span');
+          label.className = 'break-words text-slate-700';
+          label.textContent = entryData.label;
+          const amount = document.createElement('span');
+          amount.className = 'whitespace-nowrap text-right font-medium tabular-nums text-slate-800';
+          amount.textContent = entryData.amount === null ? '' : formatRupiah(entryData.amount);
+          line.append(label, amount);
+          list.appendChild(line);
+        });
+        details.appendChild(list);
+        if (parsedDetails.hasAmounts) {
+          const total = document.createElement('div');
+          total.className = 'mt-3 flex items-center justify-between border-t-2 border-slate-200 pt-3 text-sm font-bold text-slate-900';
+          const totalLabel = document.createElement('span');
+          totalLabel.textContent = 'Total rincian';
+          const totalValue = document.createElement('span');
+          totalValue.className = 'whitespace-nowrap text-right tabular-nums';
+          totalValue.textContent = formatRupiah(parsedDetails.total);
+          total.append(totalLabel, totalValue);
+          details.appendChild(total);
+          if (transactionAmount > 0) {
+            const comparison = document.createElement('p');
+            const matches = Math.abs(parsedDetails.total - transactionAmount) < 1;
+            comparison.className = `mt-2 text-xs ${matches ? 'text-green-700' : 'text-amber-700'}`;
+            comparison.textContent = matches
+              ? '✓ Total rincian sesuai dengan nilai transaksi.'
+              : `Periksa kembali rincian: nilai transaksi ${formatRupiah(transactionAmount)}.`;
+            details.appendChild(comparison);
+          }
+        }
+      }
+
+      const receiptPanel = document.createElement('section');
+      receiptPanel.className = 'rounded-xl border border-slate-200 bg-white p-4';
+      const receiptUrls = Array.from(String(item.nota || '').matchAll(/https?:\/\/[^\s,;|<>]+/gi))
+        .map(match => match[0].replace(/[.,!?)\]}]+$/, ''));
+      const receiptTitle = document.createElement('h3');
+      receiptTitle.className = 'mb-3 font-bold text-slate-800';
+      receiptTitle.textContent = receiptUrls.length ? `Nota / Foto (${receiptUrls.length})` : 'Nota / Foto';
+      receiptPanel.appendChild(receiptTitle);
+
+      if (!receiptUrls.length) {
+        const empty = document.createElement('p');
+        empty.className = 'text-sm text-slate-500';
+        empty.textContent = 'Belum ada tautan nota.';
+        receiptPanel.appendChild(empty);
+      } else {
+        const receiptGrid = document.createElement('div');
+        receiptGrid.className = 'grid grid-cols-1 gap-3 sm:grid-cols-2';
+        receiptUrls.forEach((url, index) => {
+          try {
+            const parsedUrl = new URL(url);
+            if (parsedUrl.protocol !== 'https:') return;
+            const card = document.createElement('div');
+            card.className = 'space-y-2 rounded-lg border border-slate-200 p-2';
+            const link = document.createElement('a');
+            link.href = parsedUrl.href;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.className = 'text-sm font-medium text-blue-700 underline';
+            link.textContent = `Buka nota ${index + 1}`;
+            const image = document.createElement('img');
+            image.alt = `Pratinjau nota ${index + 1}`;
+            image.loading = 'lazy';
+            image.className = 'max-h-72 w-full rounded-lg bg-slate-50 object-contain';
+            if (parsedUrl.hostname === 'drive.google.com') {
+              const fileId = parsedUrl.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || parsedUrl.searchParams.get('id');
+              image.src = fileId
+                ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w1200`
+                : parsedUrl.href;
+            } else {
+              image.src = parsedUrl.href;
+            }
+            image.addEventListener('error', () => {
+              image.hidden = true;
+              const fallback = document.createElement('p');
+              fallback.className = 'text-xs text-slate-500';
+              fallback.textContent = 'Pratinjau tidak tersedia. Buka nota melalui tautan.';
+              card.insertBefore(fallback, link);
+            }, { once: true });
+            card.append(image, link);
+            receiptGrid.appendChild(card);
+          } catch (error) {
+            console.warn('URL nota tidak valid:', url, error);
+          }
+        });
+        receiptPanel.appendChild(receiptGrid);
+      }
+
+      grid.append(details, receiptPanel);
+      cell.appendChild(grid);
+      row.appendChild(cell);
+      trigger.closest('tr').after(row);
+      trigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function parseAdminFinancialDetails(value, targetTotal) {
+      const entries = String(value || '').split(/[\r\n;|]+/)
+        .map(line => line.trim())
+        .filter(line => line && !/^(total|jumlah)\s*[:=]/i.test(line))
+        .map(line => {
+          const match = line.match(/^(.*?)(?:\s*(?:[:=]\s*)|\s+)(?:Rp\.?\s*)?(-?[\d.,]+)\s*(rb|ribu|k|jt|juta)?\s*$/i);
+          if (!match || !match[1].trim()) return { label: line, amount: null, unit: '' };
+          const number = Number(match[2].replace(/\./g, '').replace(',', '.'));
+          if (!Number.isFinite(number)) return { label: line, amount: null, unit: '' };
+          return { label: match[1].trim().replace(/[:=]\s*$/, ''), amount: number, unit: (match[3] || '').toLowerCase() };
+        });
+      const bare = entries.filter(entry => entry.amount !== null && !entry.unit);
+      const fixedTotal = entries.reduce((sum, entry) => {
+        if (entry.amount === null) return sum;
+        if (['rb', 'ribu', 'k'].includes(entry.unit)) return sum + entry.amount * 1000;
+        if (['jt', 'juta'].includes(entry.unit)) return sum + entry.amount * 1000000;
+        return sum;
+      }, 0);
+      const bareSum = bare.reduce((sum, entry) => sum + entry.amount, 0);
+      const scale = bareSum && targetTotal
+        ? [1, 1000, 1000000].reduce((best, candidate) =>
+          Math.abs(fixedTotal + bareSum * candidate - targetTotal) < Math.abs(fixedTotal + bareSum * best - targetTotal) ? candidate : best, 1)
+        : 1;
+      entries.forEach(entry => {
+        if (entry.amount === null) return;
+        const multiplier = ['rb', 'ribu', 'k'].includes(entry.unit) ? 1000
+          : ['jt', 'juta'].includes(entry.unit) ? 1000000
+            : scale;
+        entry.amount *= multiplier;
+      });
+      return {
+        entries,
+        total: entries.reduce((sum, entry) => sum + (entry.amount || 0), 0),
+        hasAmounts: entries.some(entry => entry.amount !== null)
+      };
     }
     
     function updateTableFromCache(tabType) {
@@ -3615,7 +3817,7 @@ loadHistory('JADWAL');
 
 
 
-    function cetakLaporanKas() {
+    function cetakLaporanKas(includeDetailsAndReceipts) {
       const all = sortByTanggalAsc(Array.isArray(window.__kasDataFull) ? window.__kasDataFull : [], it => parseTanggal(it.tanggal));
       const now = new Date();
       const tglCetak = now.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
@@ -3623,6 +3825,35 @@ loadHistory('JADWAL');
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       const num = (v) => { const n = Number(String(v == null ? 0 : v).replace(/[^0-9.-]/g,'')); return isNaN(n) ? 0 : n; };
       const tgl = (v) => { let t = String(v || '-'); if (t !== '-' && t.includes(' ')) t = t.split(' ')[0]; return t; };
+      const buildDetailPrint = (item) => {
+        if (!includeDetailsAndReceipts || (!item.rincian && !item.nota)) return '';
+        const transactionAmount = Number(item.jumlahPengeluaran) > 0
+          ? Number(item.jumlahPengeluaran)
+          : Number(item.danaSosial || 0) + Number(item.danaKas || 0);
+        const parsedDetails = parseAdminFinancialDetails(item.rincian, transactionAmount);
+        const detailHtml = parsedDetails.entries.length
+          ? `<div class="receipt-detail-list">${parsedDetails.entries.map(entry => `<div class="receipt-detail-line"><span>${esc(entry.label)}</span><strong>${entry.amount === null ? '' : esc(formatRupiah(entry.amount))}</strong></div>`).join('')}${parsedDetails.hasAmounts ? `<div class="receipt-detail-total"><strong>Total rincian</strong><strong>${esc(formatRupiah(parsedDetails.total))}</strong></div>` : ''}</div>`
+          : '<span class="muted">Tidak ada rincian tambahan.</span>';
+        const urls = Array.from(String(item.nota || '').matchAll(/https?:\/\/[^\s,;|<>]+/gi))
+          .map(match => match[0].replace(/[.,!?)\]}]+$/, ''));
+        const receiptHtml = urls.map((url, index) => {
+          try {
+            const parsed = new URL(url);
+            if (parsed.protocol !== 'https:') return '';
+            const fileId = parsed.hostname === 'drive.google.com'
+              ? parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || parsed.searchParams.get('id')
+              : null;
+            const imageUrl = fileId
+              ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w1200`
+              : '';
+            return `<div class="receipt-print-item">${imageUrl ? `<img src="${esc(imageUrl)}" alt="Nota ${index + 1}">` : ''}<a href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer">Buka nota ${index + 1}</a></div>`;
+          } catch (error) {
+            console.warn('URL nota tidak valid untuk laporan cetak:', url, error);
+            return '';
+          }
+        }).join('');
+        return `<tr class="transaction-detail-row"><td colspan="6"><div class="transaction-detail-print"><div><strong>Rincian transaksi</strong>${detailHtml}</div><div><strong>Nota / foto</strong>${receiptHtml || '<span class="muted">Tidak ada nota.</span>'}</div></div></td></tr>`;
+      };
 
       const NAMA_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
       const bulanKey = (it) => { const d = parseTanggal(it.tanggal); return d ? (d.getFullYear() + '-' + d.getMonth()) : 'x'; };
@@ -3663,7 +3894,7 @@ loadHistory('JADWAL');
             <td>${esc(it.jenisTransaksi || '-')}</td>
             <td class="right">${m > 0 ? esc(formatRupiah(m)) : '-'}</td>
             <td class="right">${k > 0 ? esc(formatRupiah(k)) : '-'}</td>
-          </tr>`);
+          </tr>${buildDetailPrint(it)}`);
         });
         flushBulan();
         if (rows.length > 0) {
@@ -3740,6 +3971,17 @@ loadHistory('JADWAL');
           .rincian-inner .val { display:block; font-size:12px; margin-top:3px; }
           .total-row td { font-weight: bold; background:#f5f5f5; }
           .right { text-align:right; }
+          .transaction-detail-row td { background:#f8fafc; padding:8px 12px; }
+          .transaction-detail-print { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+          .transaction-detail-print > div { min-width:0; }
+          .receipt-detail-list { margin:5px 0 0; }
+          .receipt-detail-line, .receipt-detail-total { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; padding:3px 0; }
+          .receipt-detail-line strong, .receipt-detail-total strong:last-child { text-align:right; white-space:nowrap; }
+          .receipt-detail-total { margin-top:4px; padding-top:6px; border-top:1px solid #94a3b8; }
+          .receipt-print-item { display:inline-block; vertical-align:top; width:120px; margin:6px 6px 0 0; }
+          .receipt-print-item img { display:block; width:120px; max-height:150px; object-fit:contain; border:1px solid #cbd5e1; }
+          .receipt-print-item a { display:block; margin-top:3px; word-break:break-all; }
+          .muted { color:#64748b; font-size:10px; }
           .no-data { text-align:center; padding: 20px; color:#666; }
           .page-break { page-break-before: always; }
           @media print {
@@ -3779,10 +4021,15 @@ loadHistory('JADWAL');
     }
 
     function initKasToolbar() {
-      const btn = document.getElementById('btn-cetak-kas');
-      if (btn && !btn.__wired) {
-        btn.__wired = true;
-        btn.addEventListener('click', cetakLaporanKas);
+      const btnRingkas = document.getElementById('btn-cetak-kas-ringkas');
+      const btnDetail = document.getElementById('btn-cetak-kas-detail');
+      if (btnRingkas && !btnRingkas.__wired) {
+        btnRingkas.__wired = true;
+        btnRingkas.addEventListener('click', () => cetakLaporanKas(false));
+      }
+      if (btnDetail && !btnDetail.__wired) {
+        btnDetail.__wired = true;
+        btnDetail.addEventListener('click', () => cetakLaporanKas(true));
       }
     }
 
