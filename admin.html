@@ -3986,7 +3986,10 @@ loadHistory('JADWAL');
             return '';
           }
         }).join('');
-        return `<tr class="transaction-detail-row"><td colspan="6"><div class="transaction-detail-print"><div><strong>Rincian transaksi</strong>${detailHtml}</div><div><strong>Nota / foto</strong>${receiptHtml || '<span class="muted">Tidak ada nota.</span>'}</div></div></td></tr>`;
+        const receiptGallery = receiptHtml
+          ? `<div class="receipt-print-gallery">${receiptHtml}</div>`
+          : '<span class="muted">Tidak ada nota.</span>';
+        return `<tr class="transaction-detail-row"><td colspan="6"><div class="transaction-detail-print"><div><strong>Rincian transaksi</strong>${detailHtml}</div><div><strong>Nota / foto</strong>${receiptGallery}</div></div></td></tr>`;
       };
 
       const NAMA_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -4112,9 +4115,10 @@ loadHistory('JADWAL');
           .receipt-detail-line, .receipt-detail-total { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; padding:3px 0; }
           .receipt-detail-line strong, .receipt-detail-total strong:last-child { text-align:right; white-space:nowrap; }
           .receipt-detail-total { margin-top:4px; padding-top:6px; border-top:1px solid #94a3b8; }
-          .receipt-print-item { display:inline-block; vertical-align:top; width:120px; margin:6px 6px 0 0; }
-          .receipt-print-item img { display:block; width:120px; max-height:150px; object-fit:contain; border:1px solid #cbd5e1; }
-          .receipt-print-preview { display:block; width:100%; height:240px; border:1px solid #cbd5e1; }
+          .receipt-print-gallery { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:6px; margin-top:5px; }
+          .receipt-print-item { min-width:0; margin:0; break-inside:avoid; page-break-inside:avoid; }
+          .receipt-print-item img { display:block; width:100%; height:30mm; object-fit:contain; border:1px solid #cbd5e1; }
+          .receipt-print-preview { display:block; width:100%; height:30mm; border:1px solid #cbd5e1; }
           .receipt-print-item a { display:block; margin-top:3px; word-break:break-all; }
           .muted { color:#64748b; font-size:10px; }
           .no-data { text-align:center; padding: 20px; color:#666; }
