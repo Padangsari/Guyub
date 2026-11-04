@@ -47,6 +47,15 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 16px rgba(0,0,0,0.15);
     }
+
+    .admin-detail-slide-down {
+      animation: adminDetailSlideDown 0.25s ease-out;
+    }
+
+    @keyframes adminDetailSlideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     
     .modal {
       display: none;
@@ -2451,12 +2460,9 @@ loadHistory('JADWAL');
             }
             
             return `
-              <tr class="border-b border-gray-200 hover:bg-gray-50">
+              <tr class="border-b border-gray-200 cursor-pointer hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500" data-admin-detail="KAS" data-admin-detail-index="${rowIndex}" aria-expanded="false" tabindex="0">
                 <td class="px-3 py-2">${tanggalFormatted}</td>
-                <td class="px-3 py-2">
-                  <div>${item.keterangan || '-'}</div>
-                  <button type="button" data-admin-detail="KAS" data-admin-detail-index="${rowIndex}" aria-expanded="false" class="mt-1 text-xs font-semibold text-blue-700 hover:underline">Rincian &amp; Nota</button>
-                </td>
+                <td class="px-3 py-2">${item.keterangan || '-'}</td>
                 <td class="px-3 py-2"><span class="px-2 py-1 ${item.jenisTransaksi === 'PEMASUKAN' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-full text-xs">${item.jenisTransaksi || '-'}</span></td>
                 <td class="px-3 py-2 text-green-600">${item.danaSosial > 0 ? formatRupiah(item.danaSosial) : '-'}</td>
                 <td class="px-3 py-2 text-green-600">${item.danaKas > 0 ? formatRupiah(item.danaKas) : '-'}</td>
@@ -2483,8 +2489,8 @@ loadHistory('JADWAL');
           
           case 'ASET':
             return `
-              <tr class="border-b border-gray-200 hover:bg-gray-50">
-                <td class="px-3 py-2 font-semibold">${item.namaAset || '-'}<br><button type="button" data-admin-detail="ASET" data-admin-detail-index="${rowIndex}" aria-expanded="false" class="mt-1 text-xs font-semibold text-blue-700 hover:underline">Rincian &amp; Nota</button></td>
+              <tr class="border-b border-gray-200 cursor-pointer hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500" data-admin-detail="ASET" data-admin-detail-index="${rowIndex}" aria-expanded="false" tabindex="0">
+                <td class="px-3 py-2 font-semibold">${item.namaAset || '-'}</td>
                 <td class="px-3 py-2">${item.jumlah || '-'}</td>
                 <td class="px-3 py-2">${item.jenisAset || '-'}</td>
                 <td class="px-3 py-2"><span class="px-2 py-1 ${item.kondisi === 'BAIK' ? 'bg-green-100 text-green-700' : item.kondisi === 'CUKUP' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'} rounded-full text-xs">${item.kondisi || '-'}</span></td>
@@ -2551,13 +2557,17 @@ loadHistory('JADWAL');
         }
       }).join('');
 
-      tbody.querySelectorAll('[data-admin-detail]').forEach(button => {
-        button.addEventListener('click', event => {
-          const trigger = event.currentTarget;
-          const rowIndex = Number(trigger.dataset.adminDetailIndex);
+      tbody.querySelectorAll('tr[data-admin-detail]').forEach(row => {
+        const toggle = event => {
+          if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
+          if (event.type === 'keydown') event.preventDefault();
+          if (event.target.closest('a, button, input, select, textarea')) return;
+          const rowIndex = Number(row.dataset.adminDetailIndex);
           const item = data[rowIndex];
-          if (item) toggleAdminDetailRow(tbody, trigger, item, trigger.dataset.adminDetail);
-        });
+          if (item) toggleAdminDetailRow(tbody, row, item, row.dataset.adminDetail);
+        };
+        row.addEventListener('click', toggle);
+        row.addEventListener('keydown', toggle);
       });
     }
 
@@ -2593,7 +2603,7 @@ loadHistory('JADWAL');
         const previousRow = openRow.previousElementSibling;
         const sameRow = previousRow === trigger.closest('tr');
         openRow.remove();
-        previousRow?.querySelectorAll('[data-admin-detail]').forEach(button => button.setAttribute('aria-expanded', 'false'));
+        if (previousRow?.matches('tr[data-admin-detail]')) previousRow.setAttribute('aria-expanded', 'false');
         if (sameRow) return;
       }
 
@@ -2604,7 +2614,7 @@ loadHistory('JADWAL');
       cell.className = 'border-b border-blue-100 bg-slate-50 p-3 sm:p-4';
 
       const grid = document.createElement('div');
-      grid.className = 'grid grid-cols-1 gap-4 lg:grid-cols-2';
+      grid.className = 'admin-detail-slide-down grid grid-cols-1 gap-4 lg:grid-cols-2';
       const details = document.createElement('section');
       details.className = 'rounded-xl border border-slate-200 bg-white p-4';
       const title = document.createElement('h3');
@@ -3447,14 +3457,62 @@ loadHistory('JADWAL');
         doc.open();
         doc.write(html);
         doc.close();
+        const waitForReceiptImages = () => {
+          const images = Array.from(doc.querySelectorAll('img[data-print-fallbacks]'));
+          const waitForImage = image => {
+            let fallbacks = [];
+            try {
+              fallbacks = JSON.parse(image.dataset.printFallbacks || '[]');
+            } catch (error) {
+              console.warn('Daftar fallback gambar nota tidak valid:', error);
+            }
+            return new Promise(resolve => {
+              const checkImage = () => {
+                if (image.complete) {
+                  if (image.naturalWidth > 0 || !fallbacks.length) {
+                    resolve();
+                    return;
+                  }
+                  image.src = fallbacks.shift();
+                  checkImage();
+                  return;
+                }
+                image.addEventListener('load', resolve, { once: true });
+                image.addEventListener('error', () => {
+                  if (fallbacks.length) {
+                    image.src = fallbacks.shift();
+                    checkImage();
+                  } else {
+                    resolve();
+                  }
+                }, { once: true });
+              };
+              checkImage();
+            });
+          };
+          return Promise.race([
+            Promise.all(images.map(waitForImage)),
+            new Promise(resolve => setTimeout(resolve, 5000))
+          ]);
+        };
+        doc.querySelectorAll('[data-report-print]').forEach(button => {
+          button.addEventListener('click', () => {
+            waitForReceiptImages().then(() => {
+              printWindow.focus();
+              printWindow.print();
+            });
+          });
+        });
         const triggerPrint = () => {
-          try {
-            printWindow.focus();
-            printWindow.print();
-          } catch (error) {
-            console.error('Print gagal:', error);
-            alert('Tidak bisa membuka dialog cetak. Gunakan tombol cetak pada jendela laporan.');
-          }
+          waitForReceiptImages().then(() => {
+            try {
+              printWindow.focus();
+              printWindow.print();
+            } catch (error) {
+              console.error('Print gagal:', error);
+              alert('Tidak bisa membuka dialog cetak. Gunakan tombol cetak pada jendela laporan.');
+            }
+          });
         };
         if (doc.readyState === 'complete') {
           setTimeout(triggerPrint, 100);
@@ -3878,7 +3936,8 @@ loadHistory('JADWAL');
             const parsed = new URL(url);
             if (parsed.protocol !== 'https:') return '';
             const imageUrl = getAdminDrivePreviewUrls(parsed).imageUrls[0];
-            return `<div class="receipt-print-item">${imageUrl ? `<img src="${esc(imageUrl)}" alt="Nota ${index + 1}">` : ''}<a href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer">Buka nota ${index + 1}</a></div>`;
+            const fallbackUrls = getAdminDrivePreviewUrls(parsed).imageUrls.slice(1, 2);
+            return `<div class="receipt-print-item">${imageUrl ? `<img src="${esc(imageUrl)}" data-print-fallbacks="${esc(JSON.stringify(fallbackUrls))}" alt="Nota ${index + 1}">` : ''}<a href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer">Buka nota ${index + 1}</a></div>`;
           } catch (error) {
             console.warn('URL nota tidak valid untuk laporan cetak:', url, error);
             return '';
@@ -4045,7 +4104,7 @@ loadHistory('JADWAL');
         <div class="page-break"></div>
         ${sectionSosial}
         <div class="noprint" style="margin-top:16px;text-align:center">
-          <button onclick="window.print()" style="padding:8px 16px;font-size:13px;cursor:pointer">🖨️ Cetak / Simpan sebagai PDF</button>
+          <button type="button" data-report-print style="padding:8px 16px;font-size:13px;cursor:pointer">🖨️ Cetak / Simpan sebagai PDF</button>
         </div>
       </body></html>`;
 
