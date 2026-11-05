@@ -183,38 +183,38 @@
   }
 
   /* LAPORAN KAS - 2 atas 1 bawah full + UNGU FULL */
-  #laporan-kas .grid.grid-cols-1.md\:grid-cols-3 {
+  .keuangan-report-content .grid.grid-cols-1.md\:grid-cols-3 {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.5rem !important;
   }
-  #laporan-kas .bg-green-50.rounded-lg.p-4 { 
+  .keuangan-report-content .bg-green-50.rounded-lg.p-4 { 
     grid-column: span 1 !important; 
     padding: 0.65rem !important; 
   }
-  #laporan-kas .bg-red-50.rounded-lg.p-4 { 
+  .keuangan-report-content .bg-red-50.rounded-lg.p-4 { 
     grid-column: span 1 !important; 
     padding: 0.65rem !important; 
   }
-  #laporan-kas .bg-blue-50.rounded-lg.p-4 { 
+  .keuangan-report-content .bg-blue-50.rounded-lg.p-4 { 
     grid-column: 1 / -1 !important; 
     padding: 0.75rem !important; 
   }
 
   /* RINGKASAN TOTAL UNGU - FORCE FULL WIDTH */
-  #laporan-kas div:last-child,
-  #laporan-kas > div:last-child,
-  #laporan-kas .bg-purple-500,
-  #laporan-kas .bg-indigo-500 {
+  .keuangan-report-content div:last-child,
+  .keuangan-report-content > div:last-child,
+  .keuangan-report-content .bg-purple-500,
+  .keuangan-report-content .bg-indigo-500 {
     width: 100% !important;
     grid-column: 1 / -1 !important;
     margin-top: 0.5rem !important;
   }
 
-  #laporan-kas .text-xl.font-bold { 
+  .keuangan-report-content .text-xl.font-bold { 
     font-size: 1rem !important; 
     line-height: 1.25rem !important;
   }
-  #laporan-kas .text-sm { 
+  .keuangan-report-content .text-sm { 
     font-size: 0.7rem !important; 
   }
 
@@ -264,16 +264,16 @@
 
 /* LAYAR SANGAT KECIL <400px */
 @media (max-width: 400px) and (orientation: portrait) {
-  #warga .grid, #laporan-kas .grid, #rekapitulasi-iuran .grid, #aset .grid, #cctv .grid { 
+  #warga .grid, .keuangan-report-content .grid, #rekapitulasi-iuran .grid, #aset .grid, #cctv .grid { 
     gap: 0.4rem !important; 
   }
   #warga .text-2xl.font-bold, #rekapitulasi-iuran .text-2xl.font-bold, #aset .text-2xl.font-bold, #cctv .text-2xl.font-bold { 
     font-size: 1.1rem !important; 
   }
-  #laporan-kas .text-xl.font-bold { 
+  .keuangan-report-content .text-xl.font-bold { 
     font-size: 0.9rem !important; 
   }
-  #warga .text-sm, #laporan-kas .text-sm, #rekapitulasi-iuran .text-sm, #aset .text-sm, #cctv .text-sm { 
+  #warga .text-sm, .keuangan-report-content .text-sm, #rekapitulasi-iuran .text-sm, #aset .text-sm, #cctv .text-sm { 
     font-size: 0.65rem !important; 
   }
 }
@@ -900,13 +900,13 @@ document.addEventListener('keydown', function(event){
        </div>
       </div><!-- Sub Navigation for Keuangan -->
       <div class="border-b border-gray-200 mb-6">
-       <nav class="keuangan-sub-nav"><button onclick="switchKeuanganTab('laporan-kas')" class="keuangan-sub-tab active py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"> 💰 Sosial &amp; Kas </button> <button onclick="switchKeuanganTab('rekapitulasi-iuran')" class="keuangan-sub-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"> 💳 Rekapitulasi Iuran </button> <button onclick="switchKeuanganTab('data-file')" class="keuangan-sub-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"> 📁 Data File </button>
+       <nav class="keuangan-sub-nav"><button onclick="switchKeuanganTab('dana-sosial')" class="keuangan-sub-tab active py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"> 🤝 Dana Sosial </button> <button onclick="switchKeuanganTab('dana-kas')" class="keuangan-sub-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"> 💰 Dana Kas </button> <button onclick="switchKeuanganTab('rekapitulasi-iuran')" class="keuangan-sub-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"> 💳 Rekapitulasi Iuran </button> <button onclick="switchKeuanganTab('data-file')" class="keuangan-sub-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"> 📁 Data File </button>
        </nav>
-      </div><!-- Laporan Kas Content -->
-      <div id="laporan-kas" class="keuangan-sub-content active">
+      </div>
+      <div id="keuanganReportControls" class="mb-6">
        <div class="mb-6">
         <div class="flex justify-between items-center mb-2">
-         <h3 class="text-lg font-semibold text-gray-900">💰 Laporan Sosial &amp; Kas RT 01 RW VIII</h3><button onclick="downloadLaporanKasPDF()" class="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-md transition-colors flex items-center space-x-2 shadow-lg hover:shadow-xl"> <span>📄</span> <span>Download PDF</span> </button>
+         <h3 class="text-lg font-semibold text-gray-900">💰 Laporan Keuangan RT 01 RW VIII</h3><button onclick="downloadLaporanKasPDF()" class="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-md transition-colors flex items-center space-x-2 shadow-lg hover:shadow-xl"> <span>📄</span> <span>Download PDF</span> </button>
         </div>
         <p class="text-sm text-gray-600">Laporan keuangan terpisah untuk Dana Sosial dan Dana Kas</p>
         <!-- Filter Bulan Laporan Kas -->
@@ -923,7 +923,9 @@ document.addEventListener('keydown', function(event){
          <button type="button" onclick="resetLaporanKasFilter()" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md transition-colors">Reset</button>
          <span id="filterBulanKasInfo" class="text-xs text-gray-500 md:ml-auto"></span>
         </div>
-       </div><!-- Dana Sosial Section -->
+       </div>
+      </div>
+      <div id="dana-sosial" class="keuangan-sub-content keuangan-report-content active"><!-- Dana Sosial Section -->
        <!-- Ringkasan Bulanan (mode: ringkasan) -->
        <div id="ringkasanBulananContainer" class="mb-6 hidden space-y-4"></div>
        <div id="danaSosialSection" class="mb-8">
@@ -983,7 +985,9 @@ document.addEventListener('keydown', function(event){
           </table>
          </div>
         </div>
-       </div><!-- Dana Kas Section -->
+       </div>
+      </div><!-- Dana Sosial Content -->
+      <div id="dana-kas" class="keuangan-sub-content keuangan-report-content"><!-- Dana Kas Section -->
        <div id="danaKasSection" class="mb-6">
         <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-t-lg">
          <h4 class="text-lg font-bold flex items-center">💰 LAPORAN DANA KAS</h4>
@@ -1921,6 +1925,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedSubContent = document.getElementById(tabName);
             if (selectedSubContent) {
                 selectedSubContent.classList.add('active');
+            }
+
+            const reportControls = document.getElementById('keuanganReportControls');
+            if (reportControls) {
+                reportControls.classList.toggle('hidden', tabName !== 'dana-sosial' && tabName !== 'dana-kas');
             }
             
             // Add active class to clicked sub-tab button
