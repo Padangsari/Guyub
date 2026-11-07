@@ -6781,8 +6781,8 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
             } else {
                 const receiptGrid = document.createElement('div');
                 receiptGrid.className = 'keuangan-transaction-receipt-grid grid grid-cols-1 gap-3 sm:grid-cols-2';
-                receiptGrid.style.setProperty('display', 'grid', 'important');
-                receiptGrid.style.setProperty('grid-template-columns', 'repeat(2, minmax(0, 1fr))', 'important');
+                receiptGrid.style.setProperty('display', 'flex', 'important');
+                receiptGrid.style.setProperty('flex-wrap', 'nowrap', 'important');
                 receiptGrid.style.setProperty('gap', '0.4rem', 'important');
                 receiptGrid.style.width = '100%';
                 receiptUrls.forEach((rawUrl, index) => {
@@ -6793,8 +6793,9 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                         const receiptCard = document.createElement('div');
                         receiptCard.className = 'space-y-2 rounded-lg border border-slate-200 p-2';
                         receiptCard.style.minWidth = '0';
-                        receiptCard.style.width = '100%';
-                        receiptCard.style.maxWidth = '100%';
+                        receiptCard.style.setProperty('flex', '1 1 0', 'important');
+                        receiptCard.style.setProperty('width', '0', 'important');
+                        receiptCard.style.setProperty('max-width', '50%', 'important');
                         const receiptLink = document.createElement('a');
                         receiptLink.href = receiptUrl.href;
                         receiptLink.target = '_blank';
