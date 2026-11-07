@@ -169,6 +169,17 @@
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 0.5rem !important;
   }
+
+  #keuangan .keuangan-transaction-receipt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.4rem !important;
+  }
+
+  #keuangan .keuangan-transaction-receipt-image,
+  #keuangan .keuangan-transaction-receipt-preview {
+    height: 6rem !important;
+    max-height: 6rem !important;
+  }
   
   /* DATA WARGA 2x2 */
   #warga .grid {
@@ -6760,7 +6771,7 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                 receiptPanel.appendChild(noReceipt);
             } else {
                 const receiptGrid = document.createElement('div');
-                receiptGrid.className = 'grid grid-cols-1 gap-3 sm:grid-cols-2';
+                receiptGrid.className = 'keuangan-transaction-receipt-grid grid grid-cols-1 gap-3 sm:grid-cols-2';
                 receiptUrls.forEach((rawUrl, index) => {
                     try {
                         const receiptUrl = new URL(rawUrl);
@@ -6799,7 +6810,7 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                         receiptImage.src = imageSources[imageSourceIndex];
                         receiptImage.alt = `Pratinjau nota transaksi ${index + 1}`;
                         receiptImage.loading = 'lazy';
-                        receiptImage.className = 'max-h-72 w-full rounded-lg bg-slate-50 object-contain';
+                        receiptImage.className = 'keuangan-transaction-receipt-image max-h-72 w-full rounded-lg bg-slate-50 object-contain';
                         receiptImage.addEventListener('error', () => {
                             imageSourceIndex++;
                             if (imageSourceIndex < imageSources.length) {
@@ -6811,7 +6822,7 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                                 preview.src = `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
                                 preview.title = `Pratinjau nota transaksi ${index + 1}`;
                                 preview.loading = 'lazy';
-                                preview.className = 'h-72 w-full rounded-lg border border-slate-200';
+                                preview.className = 'keuangan-transaction-receipt-preview h-72 w-full rounded-lg border border-slate-200';
                                 receiptCard.insertBefore(preview, receiptLink);
                                 receiptImage.hidden = true;
                                 return;
