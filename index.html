@@ -6675,9 +6675,13 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
 
             const panel = document.createElement('div');
             panel.className = 'keuangan-detail-slide-down keuangan-transaction-detail-panel grid grid-cols-1 gap-4 lg:grid-cols-2';
+            panel.style.setProperty('grid-template-columns', 'repeat(2, minmax(0, 1fr))', 'important');
+            panel.style.setProperty('gap', '0.5rem', 'important');
+            panel.style.width = '100%';
 
             const detailPanel = document.createElement('section');
             detailPanel.className = 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm';
+            detailPanel.style.minWidth = '0';
             const heading = document.createElement('h3');
             heading.className = 'mb-3 text-base font-bold text-slate-800';
             heading.textContent = item.uraian || 'Rincian transaksi';
@@ -6760,6 +6764,7 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
 
             const receiptPanel = document.createElement('section');
             receiptPanel.className = 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm';
+            receiptPanel.style.minWidth = '0';
             const receiptLabel = document.createElement('h3');
             receiptLabel.className = 'mb-3 text-base font-bold text-slate-800';
             const receiptSource = String(item.nota || '');
@@ -6776,6 +6781,10 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
             } else {
                 const receiptGrid = document.createElement('div');
                 receiptGrid.className = 'keuangan-transaction-receipt-grid grid grid-cols-1 gap-3 sm:grid-cols-2';
+                receiptGrid.style.setProperty('display', 'grid', 'important');
+                receiptGrid.style.setProperty('grid-template-columns', 'repeat(2, minmax(0, 1fr))', 'important');
+                receiptGrid.style.setProperty('gap', '0.4rem', 'important');
+                receiptGrid.style.width = '100%';
                 receiptUrls.forEach((rawUrl, index) => {
                     try {
                         const receiptUrl = new URL(rawUrl);
@@ -6783,6 +6792,9 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
 
                         const receiptCard = document.createElement('div');
                         receiptCard.className = 'space-y-2 rounded-lg border border-slate-200 p-2';
+                        receiptCard.style.minWidth = '0';
+                        receiptCard.style.width = '100%';
+                        receiptCard.style.maxWidth = '100%';
                         const receiptLink = document.createElement('a');
                         receiptLink.href = receiptUrl.href;
                         receiptLink.target = '_blank';
@@ -6815,6 +6827,8 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                         receiptImage.alt = `Pratinjau nota transaksi ${index + 1}`;
                         receiptImage.loading = 'lazy';
                         receiptImage.className = 'keuangan-transaction-receipt-image max-h-72 w-full rounded-lg bg-slate-50 object-contain';
+                        receiptImage.style.width = '100%';
+                        receiptImage.style.height = '6rem';
                         receiptImage.addEventListener('error', () => {
                             imageSourceIndex++;
                             if (imageSourceIndex < imageSources.length) {
@@ -6827,6 +6841,8 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
                                 preview.title = `Pratinjau nota transaksi ${index + 1}`;
                                 preview.loading = 'lazy';
                                 preview.className = 'keuangan-transaction-receipt-preview h-72 w-full rounded-lg border border-slate-200';
+                                preview.style.width = '100%';
+                                preview.style.height = '6rem';
                                 receiptCard.insertBefore(preview, receiptLink);
                                 receiptImage.hidden = true;
                                 return;
