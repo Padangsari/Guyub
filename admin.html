@@ -1052,6 +1052,75 @@
      </div>
     </form>
    </div>
+  </div><!-- Modal Edit Rincian & Nota Kas -->
+  <div id="modal-edit-kas-details" class="modal">
+   <div class="modal-content p-8">
+    <div class="mb-6 flex items-center justify-between">
+     <div>
+      <h2 class="text-2xl font-bold text-gray-800">Edit Rincian &amp; Nota</h2>
+      <p id="edit-kas-summary" class="mt-1 text-sm text-gray-500"></p>
+     </div>
+     <button type="button" class="close-modal text-3xl text-gray-500 hover:text-gray-700">×</button>
+    </div>
+    <form id="form-edit-kas-details">
+     <input type="hidden" name="rowIndex">
+     <input type="hidden" name="expectedTimestamp">
+     <input type="hidden" name="expectedTanggal">
+     <input type="hidden" name="expectedKeterangan">
+     <div class="space-y-4">
+      <div>
+       <label class="mb-2 block font-semibold text-gray-700">Rincian Transaksi</label>
+       <textarea name="rincian" rows="6" placeholder="Pisahkan tiap item dengan baris baru atau titik koma." class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-purple-500"></textarea>
+      </div>
+      <div>
+       <label class="mb-2 block font-semibold text-gray-700">URL Nota Google Drive</label>
+       <textarea name="nota" rows="4" placeholder="Tempel satu atau beberapa link berbagi Google Drive" class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-purple-500"></textarea>
+       <p class="mt-1 text-xs text-gray-500">Setiap tautan dipisahkan dengan baris baru atau titik koma. Pastikan akses Drive disetel ke “Siapa saja yang memiliki link — Pelihat”.</p>
+      </div>
+     </div>
+     <div class="mt-6 flex gap-3">
+      <button type="submit" class="btn-primary flex-1 rounded-lg px-6 py-3 font-semibold text-white">
+       <span class="submit-text">Simpan Perubahan</span>
+       <span class="submit-loading hidden"><span class="loading"></span> Menyimpan...</span>
+      </button>
+      <button type="button" class="close-modal rounded-lg bg-gray-200 px-6 py-3 font-semibold text-gray-700">Batal</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- Modal Edit Rincian & Foto Aset -->
+  <div id="modal-edit-aset-details" class="modal">
+   <div class="modal-content p-8">
+    <div class="mb-6 flex items-center justify-between">
+     <div>
+      <h2 class="text-2xl font-bold text-gray-800">Edit Rincian &amp; Foto Aset</h2>
+      <p id="edit-aset-summary" class="mt-1 text-sm text-gray-500"></p>
+     </div>
+     <button type="button" class="close-modal text-3xl text-gray-500 hover:text-gray-700">×</button>
+    </div>
+    <form id="form-edit-aset-details">
+     <input type="hidden" name="rowIndex">
+     <input type="hidden" name="expectedTimestamp">
+     <input type="hidden" name="expectedNamaAset">
+     <div class="space-y-4">
+      <div>
+       <label class="mb-2 block font-semibold text-gray-700">Rincian Aset</label>
+       <textarea name="rincian" rows="5" placeholder="Rincian tambahan aset" class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-purple-500"></textarea>
+      </div>
+      <div>
+       <label class="mb-2 block font-semibold text-gray-700">URL Foto / Nota Google Drive</label>
+       <textarea name="nota" rows="3" placeholder="Tempel satu atau beberapa link berbagi Google Drive" class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-purple-500"></textarea>
+       <p class="mt-1 text-xs text-gray-500">Setiap tautan dipisahkan dengan baris baru atau titik koma. Pastikan akses Drive disetel ke “Siapa saja yang memiliki link — Pelihat”.</p>
+      </div>
+     </div>
+     <div class="mt-6 flex gap-3">
+      <button type="submit" class="btn-primary flex-1 rounded-lg px-6 py-3 font-semibold text-white">
+       <span class="submit-text">Simpan Perubahan</span>
+       <span class="submit-loading hidden"><span class="loading"></span> Menyimpan...</span>
+      </button>
+      <button type="button" class="close-modal rounded-lg bg-gray-200 px-6 py-3 font-semibold text-gray-700">Batal</button>
+     </div>
+    </form>
+   </div>
   </div><!-- Modal Bayar Iuran Warga (NEW DESIGN) -->
   <div class="modal" id="modal-iuran">
    <div class="modal-content iuran-modal"><!-- HEADER -->
@@ -1739,6 +1808,8 @@ function preloadAllTabs() {
       document.getElementById('form-warga').addEventListener('submit', handleSubmitWarga);
       document.getElementById('form-kegiatan').addEventListener('submit', handleSubmitKegiatan);
       document.getElementById('form-kas').addEventListener('submit', handleSubmitKas);
+      document.getElementById('form-edit-kas-details').addEventListener('submit', handleEditKasDetails);
+      document.getElementById('form-edit-aset-details').addEventListener('submit', handleEditAsetDetails);
       document.getElementById('form-iuran').addEventListener('submit', handleSubmitIuran);
       document.getElementById('form-aset').addEventListener('submit', handleSubmitAset);
       document.getElementById('form-jadwal').addEventListener('submit', handleSubmitJadwal);
@@ -1908,6 +1979,116 @@ loadHistory('KAS');
         }
       } catch (error) {
         console.error('Background save error:', error);
+      }
+    }
+
+    function openKasDetailsEditor(item) {
+      const form = document.getElementById('form-edit-kas-details');
+      form.elements.namedItem('rowIndex').value = item.rowIndex || '';
+      form.elements.namedItem('expectedTimestamp').value = item.timestamp || '';
+      form.elements.namedItem('expectedTanggal').value = item.tanggal || '';
+      form.elements.namedItem('expectedKeterangan').value = item.keterangan || '';
+      form.elements.namedItem('rincian').value = item.rincian || '';
+      form.elements.namedItem('nota').value = item.nota || '';
+      document.getElementById('edit-kas-summary').textContent =
+        `${item.tanggal || '-'} · ${item.keterangan || 'Transaksi Kas'}`;
+      openModal('modal-edit-kas-details');
+    }
+
+    async function handleEditKasDetails(e) {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      setLoadingState(submitBtn, true);
+
+      const formData = new FormData(form);
+      const rowIndex = Number(formData.get('rowIndex'));
+      if (!Number.isInteger(rowIndex) || rowIndex < 7) {
+        showToast('Nomor baris transaksi tidak valid. Muat ulang data, lalu coba lagi.', 'error');
+        setLoadingState(submitBtn, false);
+        return;
+      }
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'updateKasDetails',
+            rowIndex,
+            expectedTimestamp: formData.get('expectedTimestamp'),
+            expectedTanggal: formData.get('expectedTanggal'),
+            expectedKeterangan: formData.get('expectedKeterangan'),
+            rincian: formData.get('rincian') || '',
+            nota: formData.get('nota') || ''
+          })
+        });
+        const result = (await response.text()).trim();
+        if (result !== 'SUCCESS') {
+          throw new Error(result || 'Apps Script tidak berhasil menyimpan perubahan.');
+        }
+
+        closeModal('modal-edit-kas-details');
+        showToast('Rincian dan nota transaksi berhasil diperbarui.', 'success');
+        await loadHistory('KAS');
+      } catch (error) {
+        console.error('Gagal memperbarui rincian/nota transaksi:', error);
+        showToast(`Gagal memperbarui transaksi: ${error.message}`, 'error');
+      } finally {
+        setLoadingState(submitBtn, false);
+      }
+    }
+
+    function openAsetDetailsEditor(item) {
+      const form = document.getElementById('form-edit-aset-details');
+      form.elements.namedItem('rowIndex').value = item.rowIndex || '';
+      form.elements.namedItem('expectedTimestamp').value = item.timestamp || '';
+      form.elements.namedItem('expectedNamaAset').value = item.namaAset || '';
+      form.elements.namedItem('rincian').value = item.rincian || '';
+      form.elements.namedItem('nota').value = item.nota || '';
+      document.getElementById('edit-aset-summary').textContent =
+        `${item.namaAset || 'Aset'} · ${item.timestamp || '-'}`;
+      openModal('modal-edit-aset-details');
+    }
+
+    async function handleEditAsetDetails(e) {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      setLoadingState(submitBtn, true);
+
+      const formData = new FormData(form);
+      const rowIndex = Number(formData.get('rowIndex'));
+      if (!Number.isInteger(rowIndex) || rowIndex < 4) {
+        showToast('Nomor baris aset tidak valid. Muat ulang data, lalu coba lagi.', 'error');
+        setLoadingState(submitBtn, false);
+        return;
+      }
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'updateAsetDetails',
+            rowIndex,
+            expectedTimestamp: formData.get('expectedTimestamp'),
+            expectedNamaAset: formData.get('expectedNamaAset'),
+            rincian: formData.get('rincian') || '',
+            nota: formData.get('nota') || ''
+          })
+        });
+        const result = (await response.text()).trim();
+        if (result !== 'SUCCESS') {
+          throw new Error(result || 'Apps Script tidak berhasil menyimpan perubahan.');
+        }
+
+        closeModal('modal-edit-aset-details');
+        showToast('Rincian dan foto aset berhasil diperbarui.', 'success');
+        await loadHistory('ASET');
+      } catch (error) {
+        console.error('Gagal memperbarui rincian/foto aset:', error);
+        showToast(`Gagal memperbarui aset: ${error.message}`, 'error');
+      } finally {
+        setLoadingState(submitBtn, false);
       }
     }
     
@@ -2626,9 +2807,27 @@ loadHistory('JADWAL');
       const details = document.createElement('section');
       details.className = 'rounded-xl border border-slate-200 bg-white p-4';
       const title = document.createElement('h3');
-      title.className = 'mb-3 font-bold text-slate-800';
+      title.className = 'font-bold text-slate-800';
       title.textContent = type === 'KAS' ? (item.keterangan || 'Rincian transaksi') : (item.namaAset || 'Rincian aset');
-      details.appendChild(title);
+      const detailsHeader = document.createElement('div');
+      detailsHeader.className = 'mb-3 flex items-center justify-between gap-3';
+      detailsHeader.appendChild(title);
+      const editPermission = type === 'KAS' ? 'kas' : type === 'ASET' ? 'aset' : null;
+      if (editPermission && currentAdmin?.permissions?.includes(editPermission)) {
+        const editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.className = 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+        editButton.setAttribute('aria-label', type === 'KAS' ? 'Edit rincian dan nota transaksi' : 'Edit rincian dan foto aset');
+        editButton.title = type === 'KAS' ? 'Edit rincian dan nota' : 'Edit rincian dan foto';
+        editButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>';
+        editButton.addEventListener('click', event => {
+          event.stopPropagation();
+          if (type === 'KAS') openKasDetailsEditor(item);
+          else openAsetDetailsEditor(item);
+        });
+        detailsHeader.appendChild(editButton);
+      }
+      details.appendChild(detailsHeader);
 
       if (type === 'ASET') {
         const detailText = document.createElement('p');
