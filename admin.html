@@ -2002,9 +2002,15 @@ loadHistory('KAS');
       setLoadingState(submitBtn, true);
 
       const formData = new FormData(form);
-      const rowIndex = Number(formData.get('rowIndex'));
-      if (!Number.isInteger(rowIndex) || rowIndex < 7) {
+      const rowIndexValue = formData.get('rowIndex');
+      const rowIndex = rowIndexValue ? Number(rowIndexValue) : null;
+      if (rowIndex !== null && (!Number.isInteger(rowIndex) || rowIndex < 7)) {
         showToast('Nomor baris transaksi tidak valid. Muat ulang data, lalu coba lagi.', 'error');
+        setLoadingState(submitBtn, false);
+        return;
+      }
+      if (!formData.get('expectedTimestamp') || !formData.get('expectedTanggal')) {
+        showToast('Identitas transaksi tidak lengkap. Muat ulang riwayat Kas, lalu coba lagi.', 'error');
         setLoadingState(submitBtn, false);
         return;
       }
@@ -2057,9 +2063,15 @@ loadHistory('KAS');
       setLoadingState(submitBtn, true);
 
       const formData = new FormData(form);
-      const rowIndex = Number(formData.get('rowIndex'));
-      if (!Number.isInteger(rowIndex) || rowIndex < 4) {
+      const rowIndexValue = formData.get('rowIndex');
+      const rowIndex = rowIndexValue ? Number(rowIndexValue) : null;
+      if (rowIndex !== null && (!Number.isInteger(rowIndex) || rowIndex < 4)) {
         showToast('Nomor baris aset tidak valid. Muat ulang data, lalu coba lagi.', 'error');
+        setLoadingState(submitBtn, false);
+        return;
+      }
+      if (!formData.get('expectedTimestamp') || !formData.get('expectedNamaAset')) {
+        showToast('Identitas aset tidak lengkap. Muat ulang data aset, lalu coba lagi.', 'error');
         setLoadingState(submitBtn, false);
         return;
       }
