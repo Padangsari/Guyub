@@ -164,6 +164,11 @@
    ======================================================================== */
 
 @media (max-width: 640px) and (orientation: portrait) {
+
+  #keuangan .keuangan-transaction-detail-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
   
   /* DATA WARGA 2x2 */
   #warga .grid {
@@ -6654,7 +6659,7 @@ if (currentYear > startYear || (currentYear === startYear && currentMonth >= sta
             detailCell.className = 'border-b border-blue-100 bg-slate-50 p-3 sm:p-4';
 
             const panel = document.createElement('div');
-            panel.className = 'keuangan-detail-slide-down grid grid-cols-1 gap-4 lg:grid-cols-2';
+            panel.className = 'keuangan-detail-slide-down keuangan-transaction-detail-panel grid grid-cols-1 gap-4 lg:grid-cols-2';
 
             const detailPanel = document.createElement('section');
             detailPanel.className = 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm';
